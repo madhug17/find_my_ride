@@ -6,10 +6,9 @@
             "server": "localhost",
             "port": 5432,
             "driver": "PostgreSQL",
-            "username": "postgres",
-            "name": "find_my_ride",
-            "group": "find_my_ride",
-            "database": "find_my_ride"
+            "name": "Find My Ride",
+            "database": "postgres",
+            "username": "postgres"
         }
     ]
 }
