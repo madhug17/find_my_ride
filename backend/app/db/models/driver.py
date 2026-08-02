@@ -13,9 +13,13 @@ class Driver(Base):
     phone = Column(String(20), unique=True)
     password = Column(String(255), nullable=False)
     vehicle_number = Column(String(50))
-    is_online = Column(Boolean, default=False)
+    vehicle_type = Column(String(30),nullable=False)
+    is_available = Column(Boolean, default=False)
+    created_at = Column(
+        DateTime(timezone=True),server_default=func.now()
+    )
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    #created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
