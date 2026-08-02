@@ -1,5 +1,5 @@
-from sqlalchemy.orm import DeclarativeBase
+from app.db.database import Base
 
-
-class Base(DeclarativeBase):
-    pass
+from app.db.models.student import Student
+from app.db.models.driver import Driver
+from app.db.models.ride import Ride
