@@ -1,7 +1,7 @@
 from sqlalchemy import Column,String,DateTime,ForeignKey,Float,Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.db.base import Base
+from app.db.database import Base
 class Ride(Base):
     __tablename__ = "rides"
     id = Column(Integer,primary_key=True,index=True,nullable=False)

@@ -4,6 +4,7 @@ from app.db.base import Base
 from app.db.database import engine
 from app.db.models.student import Student
 from app.db.models.driver import Driver
+from app.api.v1.ride import router as ride_router
 Base.metadata.create_all(bind=engine)
 
 app=FastAPI(
@@ -14,3 +15,7 @@ app.include_router(auth_router)
 @app.get('/health')
 def health():
     return {'status':'Ready for a Ride'}
+app.include_router(ride_router)
+@app.get('/')
+def root():
+    return{"message": "Find My Ride Backend Running "}
