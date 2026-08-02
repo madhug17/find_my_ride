@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-
+from app.repositories.auth_repository import get_student_by_email
+from app.core.security import verify_password, create_access_token
 from app.db.models.student import Student
 from app.repositories.auth_repository import (
     create_student,
@@ -28,13 +29,13 @@ def register_student(db: Session, data):
     return create_student(db, student)
 
 
-def login_student(db: Session, data):
-    student = get_student_by_email(db, data.email)
+def login_student(db: Session, email:str,password:str):
+    student = get_student_by_email(db, email)
 
     if student is None:
         raise Exception("Invalid email or password")
 
-    if not verify_password(data.password, student.password):
+    if not verify_password(password, student.password):
         raise Exception("Invalid email or password")
 
     token = create_access_token(

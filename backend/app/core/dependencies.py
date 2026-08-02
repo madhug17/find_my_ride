@@ -22,7 +22,7 @@ def get_current_student(token:str = Depends(oauth2_auth),db: Session = Depends(g
         payload = jwt.decode(
             token,
             settings.SECRET_KEY,
-            algorithms=settings.ALGORITHM
+            algorithms=[settings.ALGORITHM]
         )
         email = payload.get('sub')
         if email is None:
@@ -30,6 +30,6 @@ def get_current_student(token:str = Depends(oauth2_auth),db: Session = Depends(g
     except JWTError:
         raise credentials_exception
     student=db.query(Student).filter(Student.email == email).first()
-    if student in None:
+    if student is None:
         raise credentials_exception
     return student

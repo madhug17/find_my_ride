@@ -4,13 +4,14 @@ from app.core.dependencies import get_current_student
 from app.db.models.student import Student
 
 from app.schemas.auth import StudentRegister, StudentLogin
+from fastapi.security import OAuth2PasswordRequestForm
 from app.services.auth_service import register_student, login_student
 from app.core.dependencies import get_db
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register")
+@router.post("/register",status_code=201)
 def register(
     data: StudentRegister,
     db: Session = Depends(get_db),
@@ -30,11 +31,11 @@ def register(
 
 @router.post("/login")
 def login(
-    data: StudentLogin,
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
     try:
-        token = login_student(db, data)
+        token = login_student(db, form_data.username,form_data.password)
 
         return {
             "access_token": token,
