@@ -1,2 +1,12 @@
-CREATE DATABASE find_my_ride;
-SELECT * FROM students;
+SELECT *
+FROM information_schema.tables
+WHERE table_name = 'drivers';
+
+
+SELECT
+column_name
+FROM information_schema.columns
+WHERE table_name='drivers';
+
+SELECT datname
+FROM pg_database;

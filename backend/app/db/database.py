@@ -8,5 +8,7 @@ SessionLocal = sessionmaker(
     autoflush=False,
     bind=engine
 )
-
+print("=" * 50)
+print("DATABASE URL:", DATABASE_URL)
+print("=" * 50)
 Base = declarative_base()
