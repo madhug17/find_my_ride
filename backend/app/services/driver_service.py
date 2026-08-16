@@ -22,6 +22,7 @@ def login_driver(db:Session,email:str,password:str):
     if not verify_password(password,driver.password):
         raise Exception("Invalid credentials")
     token = create_access_token(
-        {'sub':driver.email, "role": "driver"}
+        {'sub':driver.email,
+          "role": "driver"}
     )
     return token

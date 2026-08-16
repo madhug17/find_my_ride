@@ -6,14 +6,17 @@ from app.core.config import settings
 from app.db.database import SessionLocal
 from app.db.models.student import Student
 from app.db.models.driver import Driver
-oauth2_auth = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_student = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_driver = OAuth2PasswordBearer(
+    tokenUrl="/driver/login"
+)
 def get_db():
     db=SessionLocal()
     try:
         yield db
     finally:
         db.close()
-def get_current_student(token:str = Depends(oauth2_auth),db: Session = Depends(get_db)):
+def get_current_student(token:str = Depends(oauth2_student),db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid authentication credentials",
@@ -38,7 +41,7 @@ def get_current_student(token:str = Depends(oauth2_auth),db: Session = Depends(g
 
 
 def get_current_driver(
-    token: str = Depends(oauth2_auth),
+    token: str = Depends(oauth2_driver),
     db: Session = Depends(get_db),
 ):
     credentials_exception = HTTPException(
@@ -71,3 +74,4 @@ def get_current_driver(
         raise credentials_exception
 
     return driver
+

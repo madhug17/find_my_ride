@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db, get_current_driver
-from app.schemas.driver import DriverRegister, DriverLogin
+from app.schemas.driver import DriverRegister
 from app.services.driver_service import register_driver, login_driver
 from app.db.models.driver import Driver
+from app.db.models.ride import Ride
+
 
 router = APIRouter(
     prefix="/driver",
@@ -27,18 +30,21 @@ def register(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
 
 
 @router.post("/login")
 def login(
-    data: DriverLogin,
+    data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
     try:
         token = login_driver(
             db,
-            data.email,
+            data.username,
             data.password
         )
 
@@ -48,7 +54,10 @@ def login(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(
+            status_code=401,
+            detail=str(e)
+        )
 
 
 @router.get("/me")
@@ -63,4 +72,62 @@ def me(
         "vehicle_number": current_driver.vehicle_number,
         "vehicle_type": current_driver.vehicle_type,
         "is_available": current_driver.is_available
+    }
+@router.get('/rides')
+def get_available_rides(
+    db:Session=Depends(get_db),
+    current_driver: Driver=Depends(get_current_driver)
+):
+    rides = (
+        db._query(Ride).filter(Ride.status=="PENDING").filter(Ride.driver_id.is_(None)).all()
+    )
+    return rides
+
+
+@router.put("/rides/{ride_id}/accept")
+def accept_ride(
+    ride_id:int,
+    db:Session=Depends(get_db),
+    current_driver:Driver=Depends(get_current_driver)
+):
+    ride = db.query(Ride).filter(Ride.id==ride_id).first()
+    if ride is None:
+        raise HTTPException(status_code=404,detail="Ride not found")
+    if ride.status!="PENDING":
+        raise HTTPException(status_code=400,detail='Ride is no longer available')
+    if ride.driver_id is not None:
+        raise HTTPException(
+            status_code=400,detail="Ride already accepted by another driver"
+        )
+    ride.driver_id = current_driver.id
+    ride.status = "ACCEPTED"
+    db.commit()
+    db.refresh(ride)
+    return{
+        "message": "Ride accepted successfully",
+        "ride_id": ride.id,
+        "driver_id": current_driver.id,
+        "status": ride.status
+    }
+
+@router.put("/rides/{ride_id}/complete")
+def complete_ride(
+    ride_id:int,
+    db:Session=Depends(get_db),
+    current_driver:Driver=Depends(get_current_driver)
+):
+    ride=db.query(Ride).filter(Ride.id==ride_id).first()
+    if ride is None:
+        raise HTTPException(status_code=404,detail="Ride not found")
+    if ride.driver_id != current_driver.id:
+        raise HTTPException(status_code=403,detail="You are not assigned to this ride")
+    if ride.status!= "ACCEPTED":
+        raise HTTPException(status_code=400,detail="Ride cannot be completed")
+    ride.status = "COMPLETED"
+    db.commit()
+    db.refresh(ride)
+    return {
+        "message": "Ride completed successfully",
+        "ride_id": ride.id,
+        "status": ride.status
     }

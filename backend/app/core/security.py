@@ -19,3 +19,4 @@ def create_access_token(data:dict):
         algorithm=settings.ALGORITHM
     )
 
+
