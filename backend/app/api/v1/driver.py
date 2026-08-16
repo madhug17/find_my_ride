@@ -7,6 +7,7 @@ from app.schemas.driver import DriverRegister,DriverLogin,DriverAvailability,Dri
 from app.services.driver_service import register_driver, login_driver
 from app.db.models.driver import Driver
 from app.db.models.ride import Ride
+from app.websocket.connection_manager import manager
 
 
 
@@ -163,4 +164,28 @@ def update_location(
         "message": "Driver location updated successfully",
         "latitude": current_driver.latitude,
         "longitude": current_driver.longitude
+    }
+
+@router.put("/location")
+async def update_driver_location(
+    ride_id: int,
+    latitude: float,
+    longitude: float,
+    current_driver: Driver = Depends(get_current_driver),
+    db: Session = Depends(get_db)
+):
+    current_driver.latitude = latitude
+    current_driver.longitude = longitude
+    db.commit()
+    db.refresh(current_driver)
+    await manager.send_location(
+        ride_id=ride_id,
+        latitude=latitude,
+        longitude=longitude
+    )
+    return {
+        "message": "Location updated",
+        "ride_id": ride_id,
+        "latitude": latitude,
+        "longitude": longitude
     }

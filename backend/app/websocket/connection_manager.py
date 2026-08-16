@@ -24,4 +24,20 @@ class ConnectionManager:
             return
         for websocket in self.active_connections[ride_id]:
             await websocket.send_json(message)
-manager = ConnectionManager()
+    async def send_location(
+            self,
+            ride_id:int,
+            latitude:float,
+            longitude:float
+    ):
+        message ={
+            "type": "driver_location",
+            "ride_id": ride_id,
+            "latitude": latitude,
+            "longitude": longitude
+        }
+        await self.broadcast(
+            ride_id,
+            message
+        )
+manager=ConnectionManager()

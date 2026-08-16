@@ -12,6 +12,7 @@ router = APIRouter(
     prefix='/ride',
     tags=['RIde']
 )
+
 @router.post('/book')
 def create_new_ride(
     data: RideCreate,
