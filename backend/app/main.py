@@ -6,6 +6,7 @@ from app.db.models.student import Student
 from app.db.models.driver import Driver
 from app.api.v1.ride import router as ride_router
 from app.api.v1.driver import router as driver_router
+
 Base.metadata.create_all(bind=engine)
 
 app=FastAPI(

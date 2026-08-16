@@ -15,3 +15,7 @@ class RideResponse(BaseModel):
     status: str
     class Congig:
         from_attributes: True
+class DriverLocationResponse(BaseException):
+    driver_id : int
+    latitude: float
+    longitude: float

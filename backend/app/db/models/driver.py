@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime,Float
 from sqlalchemy.sql import func
 
 
@@ -16,6 +16,8 @@ class Driver(Base):
     vehicle_number = Column(String(50))
     vehicle_type = Column(String(30),nullable=False)
     is_available = Column(Boolean, default=False)
+    latitude = Column(Float,nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(
         DateTime(timezone=True),server_default=func.now()
     )

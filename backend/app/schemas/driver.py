@@ -19,3 +19,9 @@ class DriverResponse(BaseModel):
     is_available: bool
     class Config:
         from_attributes = True
+
+class DriverAvailability(BaseModel):
+    is_available: bool
+class DriverLocation(BaseModel):
+    latitude: float
+    longitude: float

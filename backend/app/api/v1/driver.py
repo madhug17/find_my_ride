@@ -3,10 +3,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db, get_current_driver
-from app.schemas.driver import DriverRegister
+from app.schemas.driver import DriverRegister,DriverLogin,DriverAvailability,DriverLocation
 from app.services.driver_service import register_driver, login_driver
 from app.db.models.driver import Driver
 from app.db.models.ride import Ride
+
 
 
 router = APIRouter(
@@ -71,7 +72,9 @@ def me(
         "phone": current_driver.phone,
         "vehicle_number": current_driver.vehicle_number,
         "vehicle_type": current_driver.vehicle_type,
-        "is_available": current_driver.is_available
+        "is_available": current_driver.is_available,
+        "latitude": current_driver.latitude,
+        "longitude": current_driver.longitude
     }
 @router.get('/rides')
 def get_available_rides(
@@ -79,7 +82,7 @@ def get_available_rides(
     current_driver: Driver=Depends(get_current_driver)
 ):
     rides = (
-        db._query(Ride).filter(Ride.status=="PENDING").filter(Ride.driver_id.is_(None)).all()
+        db.query(Ride).filter(Ride.status=="PENDING").filter(Ride.driver_id.is_(None)).all()
     )
     return rides
 
@@ -130,4 +133,34 @@ def complete_ride(
         "message": "Ride completed successfully",
         "ride_id": ride.id,
         "status": ride.status
+    }
+
+@router.put('availability')
+def update_availability(
+    data: DriverAvailability,
+    db: Session = Depends(get_db),
+    current_driver: Driver=Depends(get_current_driver)
+):
+    current_driver.is_available=data.is_available
+    db.commit()
+    db.refresh(current_driver)
+    return{
+        "message": "Driver availability updated successfully",
+        "is_available": current_driver.is_available
+    }
+
+@router.put('/location')
+def update_location(
+    data:DriverLocation,
+    db:Session = Depends(get_db),
+    current_driver :Driver=Depends(get_current_driver)
+):
+    current_driver.longitude = data.longitude
+    current_driver.latitude =data.latitude
+    db.commit()
+    db.refresh(current_driver)
+    return{
+        "message": "Driver location updated successfully",
+        "latitude": current_driver.latitude,
+        "longitude": current_driver.longitude
     }
