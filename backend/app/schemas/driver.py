@@ -23,5 +23,6 @@ class DriverResponse(BaseModel):
 class DriverAvailability(BaseModel):
     is_available: bool
 class DriverLocation(BaseModel):
+    ride_id: int
     latitude: float
     longitude: float

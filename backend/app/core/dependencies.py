@@ -45,7 +45,7 @@ def get_current_driver(
     db: Session = Depends(get_db),
 ):
     credentials_exception = HTTPException(
-        status_code=401,
+        status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid authentication credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )

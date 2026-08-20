@@ -150,22 +150,6 @@ def update_availability(
         "is_available": current_driver.is_available
     }
 
-@router.put('/location')
-def update_location(
-    data:DriverLocation,
-    db:Session = Depends(get_db),
-    current_driver :Driver=Depends(get_current_driver)
-):
-    current_driver.longitude = data.longitude
-    current_driver.latitude =data.latitude
-    db.commit()
-    db.refresh(current_driver)
-    return{
-        "message": "Driver location updated successfully",
-        "latitude": current_driver.latitude,
-        "longitude": current_driver.longitude
-    }
-
 @router.put("/location")
 async def update_driver_location(
     ride_id: int,
@@ -176,13 +160,16 @@ async def update_driver_location(
 ):
     current_driver.latitude = latitude
     current_driver.longitude = longitude
+
     db.commit()
     db.refresh(current_driver)
+
     await manager.send_location(
         ride_id=ride_id,
         latitude=latitude,
         longitude=longitude
     )
+
     return {
         "message": "Location updated",
         "ride_id": ride_id,
