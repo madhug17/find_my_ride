@@ -8,7 +8,7 @@ from app.services.driver_service import register_driver, login_driver
 from app.db.models.driver import Driver
 from app.db.models.ride import Ride
 from app.websocket.connection_manager import manager
-
+from app.db.models.ride import Ride
 
 
 router = APIRouter(
@@ -158,6 +158,11 @@ async def update_driver_location(
     current_driver: Driver = Depends(get_current_driver),
     db: Session = Depends(get_db)
 ):
+    ride=db.query(Ride).filter(Ride.id==ride_id).first()
+    if ride is None:
+        raise HTTPException(status_code=404,detail="Ride Not found")
+    if ride.driver_id != current_driver.id:
+        raise HTTPException(status_code=403,detail="You are not assigned to this ride")
     current_driver.latitude = latitude
     current_driver.longitude = longitude
 
@@ -175,4 +180,37 @@ async def update_driver_location(
         "ride_id": ride_id,
         "latitude": latitude,
         "longitude": longitude
+    }
+@router.get('rides/available')
+def get_available_rides(
+    db:Session=Depends(get_db),
+    current_driver:Driver=Depends(get_current_driver)
+):
+    rides=db.query(Ride).filter(Ride.status=="PENDING",Ride.driver_id==None).all()
+    return rides
+
+## Adding Accepting ride
+@router.put('/rides/{ride_id}/accept')
+def accept_ride(
+    ride_id:int,
+    db:Session=Depends(get_db),
+    current_driver:Driver=Depends(get_current_driver)
+
+):
+    ride=db.query(Ride).filter(Ride.id==ride_id).first()
+    if ride is None:
+        raise HTTPException(status_code=404,detail="Ride not found")
+    if ride.status !="PENDING":
+        raise HTTPException(status_code=400,detail="Ride is not available")
+    if ride.driver_id is not None:
+        raise HTTPException(status_code=400,detail="Ride already accepted")
+    ride.driver_id = current_driver.id
+    ride.status = "ACCEPTED"
+    db.commit()
+    db.refresh(ride)
+    return{
+        "message": "Ride accepted successfully",
+        "ride_id": ride.id,
+        "driver_id": ride.driver_id,
+        "status": ride.status
     }
