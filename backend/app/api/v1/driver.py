@@ -341,3 +341,29 @@ def driver_history(
 ):
     rides = db.query(Ride).filter(Ride.driver_id==current_driver.id).order_by(Ride.created_at.desc()).all()
     return rides
+@router.get("/rides/current")
+def get_current_ride(
+    db: Session=Depends(get_db),
+    current_driver:Driver=Depends(get_current_driver)
+):
+    ride = db.query(Ride).filter(Ride.driver_id == current_driver.id,Ride.status.in_(["ACCEPTED", "STARTED"])
+    ).order_by(Ride.created_at.desc()).first()
+    if ride is None:
+        return {
+            "message": "No active ride",
+            "ride": None
+        }
+    return{
+        "message": "Active ride found",
+        "ride": {
+            "id": ride.id,
+            "student_id": ride.student_id,
+            "pickup_loc": ride.pickup_loc,
+            "drop_loc": ride.drop_loc,
+            "pickup_lat": ride.pickup_lat,
+            "pickup_lng": ride.pickup_lng,
+            "drop_lat": ride.drop_lat,
+            "drop_lng": ride.drop_lng,
+            "status": ride.status
+        }
+    }
