@@ -8,6 +8,7 @@ from app.db.models.ride import Ride
 from app.db.models.student import Student
 from fastapi import WebSocket,WebSocketDisconnect
 from app.websocket.connection_manager import manager
+from app.db.models.driver import Driver
 router = APIRouter(
     prefix='/ride',
     tags=['RIde']
@@ -90,3 +91,54 @@ async def ride_location_websocket(
             ride_id,
             websocket
         )
+
+@router.get("/{ride_id}/status")
+def get_ride_status(
+    ride_id: int,
+    db: Session = Depends(get_db),
+    current_student: Student = Depends(get_current_student)
+):
+    ride = db.query(Ride).filter(
+        Ride.id == ride_id
+    ).first()
+
+    if ride is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ride not found"
+        )
+    if ride.student_id != current_student.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to view this ride"
+        )
+
+    response = {
+        "ride_id": ride.id,
+        "status": ride.status,
+        "pickup_loc": ride.pickup_loc,
+        "drop_loc": ride.drop_loc,
+    }
+
+    if ride.driver_id is not None:
+        driver = db.query(Driver).filter(
+            Driver.id == ride.driver_id
+        ).first()
+
+        response["driver"] = {
+            "id": driver.id,
+            "name": driver.name,
+            "phone": driver.phone,
+            "vehicle_number": driver.vehicle_number,
+            "vehicle_type": driver.vehicle_type
+        }
+
+    return response
+
+@router.get('/history')
+def ride_history(
+    db:Session=Depends(get_db),
+    current_student:Student=Depends(get_current_student)
+):
+    rides = db.query(Ride).filter(Ride.student_id==current_student.id).order_by(Ride.created_at.desc()).all()
+    return rides

@@ -3,12 +3,15 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db, get_current_driver
-from app.schemas.driver import DriverRegister,DriverLogin,DriverAvailability,DriverLocation
+from app.schemas.driver import (
+    DriverRegister,
+    DriverAvailability,
+    DriverLocation,
+)
 from app.services.driver_service import register_driver, login_driver
 from app.db.models.driver import Driver
 from app.db.models.ride import Ride
 from app.websocket.connection_manager import manager
-from app.db.models.ride import Ride
 
 
 router = APIRouter(
@@ -77,140 +80,264 @@ def me(
         "latitude": current_driver.latitude,
         "longitude": current_driver.longitude
     }
-@router.get('/rides')
+
+
+@router.get("/rides/available")
 def get_available_rides(
-    db:Session=Depends(get_db),
-    current_driver: Driver=Depends(get_current_driver)
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
 ):
     rides = (
-        db.query(Ride).filter(Ride.status=="PENDING").filter(Ride.driver_id.is_(None)).all()
+        db.query(Ride)
+        .filter(
+            Ride.status == "PENDING",
+            Ride.driver_id.is_(None)
+        )
+        .all()
     )
+
     return rides
 
 
 @router.put("/rides/{ride_id}/accept")
 def accept_ride(
-    ride_id:int,
-    db:Session=Depends(get_db),
-    current_driver:Driver=Depends(get_current_driver)
+    ride_id: int,
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
 ):
-    ride = db.query(Ride).filter(Ride.id==ride_id).first()
-    if ride is None:
-        raise HTTPException(status_code=404,detail="Ride not found")
-    if ride.status!="PENDING":
-        raise HTTPException(status_code=400,detail='Ride is no longer available')
-    if ride.driver_id is not None:
+    if not current_driver.is_available:
         raise HTTPException(
-            status_code=400,detail="Ride already accepted by another driver"
+            status_code=400,
+            detail="Driver is currently unavailable"
         )
-    ride.driver_id = current_driver.id
-    ride.status = "ACCEPTED"
+
+    updated_rows = (
+        db.query(Ride)
+        .filter(
+            Ride.id == ride_id,
+            Ride.status == "PENDING",
+            Ride.driver_id.is_(None)
+        )
+        .update(
+            {
+                Ride.driver_id: current_driver.id,
+                Ride.status: "ACCEPTED"
+            },
+            synchronize_session=False
+        )
+    )
+
+    if updated_rows == 0:
+        db.rollback()
+
+        ride = (
+            db.query(Ride)
+            .filter(Ride.id == ride_id)
+            .first()
+        )
+
+        if ride is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Ride not found"
+            )
+
+        raise HTTPException(
+            status_code=409,
+            detail="Ride is no longer available"
+        )
+
+    current_driver.is_available = False
+
     db.commit()
-    db.refresh(ride)
-    return{
+
+    ride = (
+        db.query(Ride)
+        .filter(Ride.id == ride_id)
+        .first()
+    )
+
+    return {
         "message": "Ride accepted successfully",
         "ride_id": ride.id,
         "driver_id": current_driver.id,
         "status": ride.status
     }
 
-@router.put("/rides/{ride_id}/complete")
-def complete_ride(
-    ride_id:int,
-    db:Session=Depends(get_db),
-    current_driver:Driver=Depends(get_current_driver)
+
+@router.put("/rides/{ride_id}/start")
+def start_ride(
+    ride_id: int,
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
 ):
-    ride=db.query(Ride).filter(Ride.id==ride_id).first()
+    ride = (
+        db.query(Ride)
+        .filter(Ride.id == ride_id)
+        .first()
+    )
+
     if ride is None:
-        raise HTTPException(status_code=404,detail="Ride not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Ride not found"
+        )
+
     if ride.driver_id != current_driver.id:
-        raise HTTPException(status_code=403,detail="You are not assigned to this ride")
-    if ride.status!= "ACCEPTED":
-        raise HTTPException(status_code=400,detail="Ride cannot be completed")
-    ride.status = "COMPLETED"
+        raise HTTPException(
+            status_code=403,
+            detail="You are not assigned to this ride"
+        )
+
+    if ride.status != "ACCEPTED":
+        raise HTTPException(
+            status_code=400,
+            detail="Only an ACCEPTED ride can be started"
+        )
+
+    ride.status = "STARTED"
+
     db.commit()
     db.refresh(ride)
+
     return {
-        "message": "Ride completed successfully",
+        "message": "Ride started successfully",
         "ride_id": ride.id,
+        "driver_id": current_driver.id,
         "status": ride.status
     }
 
-@router.put('availability')
+
+@router.put("/rides/{ride_id}/complete")
+def complete_ride(
+    ride_id: int,
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
+):
+    ride = (
+        db.query(Ride)
+        .filter(Ride.id == ride_id)
+        .first()
+    )
+
+    if ride is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ride not found"
+        )
+
+    if ride.driver_id != current_driver.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not assigned to this ride"
+        )
+
+    if ride.status != "STARTED":
+        raise HTTPException(
+            status_code=400,
+            detail="Only a STARTED ride can be completed"
+        )
+
+    ride.status = "COMPLETED"
+    current_driver.is_available = True
+
+    db.commit()
+    db.refresh(ride)
+
+    return {
+        "message": "Ride completed successfully",
+        "ride_id": ride.id,
+        "driver_id": current_driver.id,
+        "status": ride.status,
+        "driver_available": current_driver.is_available
+    }
+
+
+@router.put("/availability")
 def update_availability(
     data: DriverAvailability,
     db: Session = Depends(get_db),
-    current_driver: Driver=Depends(get_current_driver)
+    current_driver: Driver = Depends(get_current_driver)
 ):
-    current_driver.is_available=data.is_available
+    if not data.is_available:
+        active_ride = (
+            db.query(Ride)
+            .filter(
+                Ride.driver_id == current_driver.id,
+                Ride.status.in_(["ACCEPTED", "STARTED"])
+            )
+            .first()
+        )
+
+        if active_ride:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot become unavailable while handling an active ride"
+            )
+
+    current_driver.is_available = data.is_available
+
     db.commit()
     db.refresh(current_driver)
-    return{
+
+    return {
         "message": "Driver availability updated successfully",
         "is_available": current_driver.is_available
     }
 
+
 @router.put("/location")
 async def update_driver_location(
-    ride_id: int,
-    latitude: float,
-    longitude: float,
+    data: DriverLocation,
     current_driver: Driver = Depends(get_current_driver),
     db: Session = Depends(get_db)
 ):
-    ride=db.query(Ride).filter(Ride.id==ride_id).first()
+    ride = (
+        db.query(Ride)
+        .filter(Ride.id == data.ride_id)
+        .first()
+    )
+
     if ride is None:
-        raise HTTPException(status_code=404,detail="Ride Not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Ride not found"
+        )
+
     if ride.driver_id != current_driver.id:
-        raise HTTPException(status_code=403,detail="You are not assigned to this ride")
-    current_driver.latitude = latitude
-    current_driver.longitude = longitude
+        raise HTTPException(
+            status_code=403,
+            detail="You are not assigned to this ride"
+        )
+
+    if ride.status not in ["ACCEPTED", "STARTED"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Location cannot be updated for this ride"
+        )
+
+    current_driver.latitude = data.latitude
+    current_driver.longitude = data.longitude
 
     db.commit()
     db.refresh(current_driver)
 
     await manager.send_location(
-        ride_id=ride_id,
-        latitude=latitude,
-        longitude=longitude
+        ride_id=data.ride_id,
+        latitude=data.latitude,
+        longitude=data.longitude
     )
 
     return {
-        "message": "Location updated",
-        "ride_id": ride_id,
-        "latitude": latitude,
-        "longitude": longitude
+        "message": "Location updated successfully",
+        "ride_id": data.ride_id,
+        "latitude": data.latitude,
+        "longitude": data.longitude
     }
-@router.get('rides/available')
-def get_available_rides(
+@router.get('/driver/history')
+def driver_history(
     db:Session=Depends(get_db),
     current_driver:Driver=Depends(get_current_driver)
 ):
-    rides=db.query(Ride).filter(Ride.status=="PENDING",Ride.driver_id==None).all()
+    rides = db.query(Ride).filter(Ride.driver_id==current_driver.id).order_by(Ride.created_at.desc()).all()
     return rides
-
-## Adding Accepting ride
-@router.put('/rides/{ride_id}/accept')
-def accept_ride(
-    ride_id:int,
-    db:Session=Depends(get_db),
-    current_driver:Driver=Depends(get_current_driver)
-
-):
-    ride=db.query(Ride).filter(Ride.id==ride_id).first()
-    if ride is None:
-        raise HTTPException(status_code=404,detail="Ride not found")
-    if ride.status !="PENDING":
-        raise HTTPException(status_code=400,detail="Ride is not available")
-    if ride.driver_id is not None:
-        raise HTTPException(status_code=400,detail="Ride already accepted")
-    ride.driver_id = current_driver.id
-    ride.status = "ACCEPTED"
-    db.commit()
-    db.refresh(ride)
-    return{
-        "message": "Ride accepted successfully",
-        "ride_id": ride.id,
-        "driver_id": ride.driver_id,
-        "status": ride.status
-    }
