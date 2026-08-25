@@ -354,3 +354,46 @@ async def update_driver_location(
         "latitude": data.latitude,
         "longitude": data.longitude
     }
+from app.utils.distance import calculate_distance
+from app.db.models.ride import Ride
+
+@router.get("/rides/nearby")
+def get_nearby_distance(
+    radius_km:float=5.0,
+    db:Session = Depends(get_db),
+    current_driver:Driver = Depends(get_current_driver)
+):
+    if current_driver.latitude is None or current_driver.longitude is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Driver location is not available"
+        )
+    rides = db.query(Ride).filter(
+        Ride.status == "PENDING",Ride.driver_id.is_(None)
+    ).all()
+    nearby_rides = []
+    for ride in rides:
+        distance = calculate_distance(
+            current_driver.latitude,
+            current_driver.longitude,
+            ride.pickup_lat,
+            ride.pickup_lng
+        )
+        if distance <= radius_km:
+            nearby_rides.append({
+                "ride_id": ride.id,
+                "pickup_loc": ride.pickup_loc,
+                "drop_loc": ride.drop_loc,
+                "pickup_lat": ride.pickup_lat,
+                "pickup_lng": ride.pickup_lng,
+                "drop_lat": ride.drop_lat,
+                "drop_lng": ride.drop_lng,
+                "distance_km": round(distance, 2),
+                "status": ride.status
+            })
+            nearby_rides.sort(key=lambda ride: ride["distance_km"])
+            return {
+                "radius_km": radius_km,
+                "total_nearby_rides": len(nearby_rides),
+                "rides": nearby_rides
+            }
