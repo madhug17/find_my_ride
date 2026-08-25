@@ -9,6 +9,8 @@ from app.db.models.student import Student
 from fastapi import WebSocket,WebSocketDisconnect
 from app.websocket.connection_manager import manager
 from app.db.models.driver import Driver
+from app.schemas.rating import RatingCreate
+from app.db.models.rating import Rating
 router = APIRouter(
     prefix='/ride',
     tags=['RIde']
@@ -142,3 +144,141 @@ def ride_history(
 ):
     rides = db.query(Ride).filter(Ride.student_id==current_student.id).order_by(Ride.created_at.desc()).all()
     return rides
+
+@router.put("/{ride_id}/cancel")
+def cancel_ride(
+    ride_id:int,
+    db:Session=Depends(get_db),
+    current_student:Student=Depends(get_current_student)
+
+):
+    ride = db.query(Ride).filter(Ride.id==ride_id).first()
+    if ride is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ride not found"
+        )
+    if ride.student_id!=current_student.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to cancel this ride"
+        )
+    if ride.status != "PENDING":
+        raise HTTPException(
+            status_code=400,
+            detail="Only a PENDING ride can be cancelled"
+        )
+    ride.status="CANCELLED"
+    db.commit()
+    db.refresh(ride)
+    return {
+        "message": "Ride cancelled successfully",
+        "ride_id": ride.id,
+        "status": ride.status
+    }
+
+@router.post("/{ride_id}/rate")
+def rate_driver(
+    ride_id: int,
+    data: RatingCreate,
+    db:Session=Depends(get_db),
+    current_student:Student = Depends(get_current_student)
+):
+    ride=db.query(Ride).filter(
+        Ride.id == ride_id
+    ).first()
+    if ride is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ride not Found"
+        )
+    if ride.student_id!= current_student.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to rate this ride"
+        )
+    if ride.status != "COMPLETED":
+        raise HTTPException(
+            status_code=400,
+            detail="Only a COMPLETED ride can be rated"
+        )
+    if ride.driver_id is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No driver assigned to this ride"
+        )
+    existing_rating = db.query(Rating).filter(
+        Rating.ride_id == ride.id,
+        Rating.student_id == current_student.id
+    ).first()
+    if existing_rating:
+        raise HTTPException(
+            status_code=400,
+            detail="You have already rated this ride"
+        )
+    new_rating  = Rating(
+        ride_id = ride.id,
+        student_id = current_student.id,
+        driver_id = ride.driver_id,
+        rating = data.rating,
+        comment = data.comment
+    )
+    db.add(new_rating)
+    db.commit()
+    db.refresh(new_rating)
+    return {
+        "message": "Driver rated successfully",
+        "rating_id": new_rating.id,
+        "ride_id": ride.id,
+        "driver_id": ride.driver_id,
+        "rating": new_rating.rating,
+        "comment": new_rating.comment
+    }
+
+@router.get("/current")
+def get_current_ride(
+    db: Session = Depends(get_db),
+    current_student: Student = Depends(get_current_student)
+):
+    ride = db.query(Ride).filter(
+        Ride.student_id == current_student.id,
+        Ride.status.in_(["PENDING", "ACCEPTED", "STARTED"])
+    ).order_by(
+        Ride.created_at.desc()
+    ).first()
+
+    if ride is None:
+        return {
+            "message": "No active ride",
+            "ride": None
+        }
+
+    response = {
+        "id": ride.id,
+        "pickup_loc": ride.pickup_loc,
+        "drop_loc": ride.drop_loc,
+        "pickup_lat": ride.pickup_lat,
+        "pickup_lng": ride.pickup_lng,
+        "drop_lat": ride.drop_lat,
+        "drop_lng": ride.drop_lng,
+        "status": ride.status
+    }
+
+    if ride.driver_id is not None:
+        driver = db.query(Driver).filter(
+            Driver.id == ride.driver_id
+        ).first()
+
+        if driver is not None:
+            response["driver"] = {
+                "id": driver.id,
+                "name": driver.name,
+                "phone": driver.phone,
+                "vehicle_number": driver.vehicle_number,
+                "vehicle_type": driver.vehicle_type
+            }
+
+    return {
+        "message": "Active ride found",
+        "ride": response
+    }

@@ -12,6 +12,7 @@ from app.services.driver_service import register_driver, login_driver
 from app.db.models.driver import Driver
 from app.db.models.ride import Ride
 from app.websocket.connection_manager import manager
+from app.db.models.rating import Rating
 
 
 router = APIRouter(
@@ -366,4 +367,72 @@ def get_current_ride(
             "drop_lng": ride.drop_lng,
             "status": ride.status
         }
+    }
+
+
+@router.put("/rides/{ride_id}/cancel")
+def cancel_ride_driver(
+    ride_id: int,
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
+):
+    ride = db.query(Ride).filter(
+        Ride.id == ride_id
+    ).first()
+
+    if ride is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ride not found"
+        )
+    if ride.driver_id != current_driver.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to cancel this ride"
+        )
+    if ride.status != "ACCEPTED":
+        raise HTTPException(
+            status_code=400,
+            detail="Only an ACCEPTED ride can be cancelled"
+        )
+    ride.status = "PENDING"
+    ride.driver_id = None
+    db.commit()
+    db.refresh(ride)
+    return {
+        "message": "Ride cancelled successfully",
+        "ride_id": ride.id,
+        "status": ride.status
+    }
+
+@router.get("/ratings")
+def get_driver_ratings(
+    db:Session=Depends(get_db),
+    current_driver : Driver = Depends(get_current_driver)
+):
+    rating = db.query(Rating).filter(
+        Rating.driver_id == current_driver.id
+    ).order_by(
+        Rating.created_at.desc()
+    ).all()
+    return rating
+
+from sqlalchemy import func
+
+@router.get("/ratings/summary")
+def get_driver_rating_summary(
+    db:Session=Depends(get_db),
+    current_driver : Driver=Depends(get_current_driver)
+):
+    total_rating = db.query(Rating).filter(
+        Rating.driver_id == current_driver.id
+    ).count()
+    avg_rating = db.query(func.avg(Rating.rating).filter(
+        Rating.driver_id == current_driver.id
+    )).scalar()
+    return{
+         "driver_id": current_driver.id,
+        "average_rating": round(avg_rating, 2)
+        if avg_rating is not None else 0,
+        "total_ratings": total_rating
     }

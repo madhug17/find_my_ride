@@ -22,3 +22,6 @@ app.include_router(ride_router)
 def root():
     return{"message": "Find My Ride Backend Running "}
 app.include_router(driver_router)
+
+
+from app.db.models.rating import Rating
