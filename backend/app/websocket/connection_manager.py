@@ -40,4 +40,15 @@ class ConnectionManager:
             ride_id,
             message
         )
+    async def send_status(
+            self,ride_id:int,status:str
+    ):
+        message={
+            "type": "ride_status",
+            "ride_id": ride_id,
+            "status": status
+        }
+        await self.broadcast(
+            ride_id,message
+        )
 manager=ConnectionManager()

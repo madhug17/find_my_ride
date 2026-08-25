@@ -101,17 +101,26 @@ def get_available_rides(
 
 
 @router.put("/rides/{ride_id}/accept")
-def accept_ride(
+async def accept_ride(
     ride_id: int,
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
 ):
+    active_ride = db.query(Ride).filter(
+        Ride.driver_id == current_driver.id,
+        Ride.status.in_(["ACCEPTED", "STARTED"])
+    ).first()
+
+    if active_ride:
+        raise HTTPException(
+            status_code=400,
+            detail="You already have an active ride"
+        )
     if not current_driver.is_available:
         raise HTTPException(
             status_code=400,
             detail="Driver is currently unavailable"
         )
-
     updated_rows = (
         db.query(Ride)
         .filter(
@@ -131,33 +140,34 @@ def accept_ride(
     if updated_rows == 0:
         db.rollback()
 
-        ride = (
-            db.query(Ride)
-            .filter(Ride.id == ride_id)
-            .first()
-        )
+        ride = db.query(Ride).filter(
+            Ride.id == ride_id
+        ).first()
 
         if ride is None:
             raise HTTPException(
                 status_code=404,
                 detail="Ride not found"
             )
-
         raise HTTPException(
             status_code=409,
             detail="Ride is no longer available"
         )
-
+        
     current_driver.is_available = False
-
     db.commit()
+    db.refresh(current_driver)
+    
+    ride = db.query(Ride).filter(
+        Ride.id == ride_id
+    ).first()
+    db.refresh(ride)
 
-    ride = (
-        db.query(Ride)
-        .filter(Ride.id == ride_id)
-        .first()
+    await manager.send_status(
+        ride_id=ride.id,
+        status=ride.status
     )
-
+    
     return {
         "message": "Ride accepted successfully",
         "ride_id": ride.id,
@@ -167,7 +177,7 @@ def accept_ride(
 
 
 @router.put("/rides/{ride_id}/start")
-def start_ride(
+async def start_ride(
     ride_id: int,
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
@@ -201,6 +211,11 @@ def start_ride(
     db.commit()
     db.refresh(ride)
 
+    await manager.send_status(
+        ride_id=ride.id,
+        status=ride.status
+    )
+
     return {
         "message": "Ride started successfully",
         "ride_id": ride.id,
@@ -210,7 +225,7 @@ def start_ride(
 
 
 @router.put("/rides/{ride_id}/complete")
-def complete_ride(
+async def complete_ride(
     ride_id: int,
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
@@ -240,10 +255,15 @@ def complete_ride(
         )
 
     ride.status = "COMPLETED"
+    
     current_driver.is_available = True
 
     db.commit()
     db.refresh(ride)
+    await manager.send_status(
+        ride_id=ride.id,
+        status=ride.status
+    )
 
     return {
         "message": "Ride completed successfully",
@@ -328,111 +348,9 @@ async def update_driver_location(
         latitude=data.latitude,
         longitude=data.longitude
     )
-
     return {
         "message": "Location updated successfully",
         "ride_id": data.ride_id,
         "latitude": data.latitude,
         "longitude": data.longitude
-    }
-@router.get('/driver/history')
-def driver_history(
-    db:Session=Depends(get_db),
-    current_driver:Driver=Depends(get_current_driver)
-):
-    rides = db.query(Ride).filter(Ride.driver_id==current_driver.id).order_by(Ride.created_at.desc()).all()
-    return rides
-@router.get("/rides/current")
-def get_current_ride(
-    db: Session=Depends(get_db),
-    current_driver:Driver=Depends(get_current_driver)
-):
-    ride = db.query(Ride).filter(Ride.driver_id == current_driver.id,Ride.status.in_(["ACCEPTED", "STARTED"])
-    ).order_by(Ride.created_at.desc()).first()
-    if ride is None:
-        return {
-            "message": "No active ride",
-            "ride": None
-        }
-    return{
-        "message": "Active ride found",
-        "ride": {
-            "id": ride.id,
-            "student_id": ride.student_id,
-            "pickup_loc": ride.pickup_loc,
-            "drop_loc": ride.drop_loc,
-            "pickup_lat": ride.pickup_lat,
-            "pickup_lng": ride.pickup_lng,
-            "drop_lat": ride.drop_lat,
-            "drop_lng": ride.drop_lng,
-            "status": ride.status
-        }
-    }
-
-
-@router.put("/rides/{ride_id}/cancel")
-def cancel_ride_driver(
-    ride_id: int,
-    db: Session = Depends(get_db),
-    current_driver: Driver = Depends(get_current_driver)
-):
-    ride = db.query(Ride).filter(
-        Ride.id == ride_id
-    ).first()
-
-    if ride is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Ride not found"
-        )
-    if ride.driver_id != current_driver.id:
-        raise HTTPException(
-            status_code=403,
-            detail="You are not allowed to cancel this ride"
-        )
-    if ride.status != "ACCEPTED":
-        raise HTTPException(
-            status_code=400,
-            detail="Only an ACCEPTED ride can be cancelled"
-        )
-    ride.status = "PENDING"
-    ride.driver_id = None
-    db.commit()
-    db.refresh(ride)
-    return {
-        "message": "Ride cancelled successfully",
-        "ride_id": ride.id,
-        "status": ride.status
-    }
-
-@router.get("/ratings")
-def get_driver_ratings(
-    db:Session=Depends(get_db),
-    current_driver : Driver = Depends(get_current_driver)
-):
-    rating = db.query(Rating).filter(
-        Rating.driver_id == current_driver.id
-    ).order_by(
-        Rating.created_at.desc()
-    ).all()
-    return rating
-
-from sqlalchemy import func
-
-@router.get("/ratings/summary")
-def get_driver_rating_summary(
-    db:Session=Depends(get_db),
-    current_driver : Driver=Depends(get_current_driver)
-):
-    total_rating = db.query(Rating).filter(
-        Rating.driver_id == current_driver.id
-    ).count()
-    avg_rating = db.query(func.avg(Rating.rating).filter(
-        Rating.driver_id == current_driver.id
-    )).scalar()
-    return{
-         "driver_id": current_driver.id,
-        "average_rating": round(avg_rating, 2)
-        if avg_rating is not None else 0,
-        "total_ratings": total_rating
     }
