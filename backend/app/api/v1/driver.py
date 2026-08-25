@@ -106,6 +106,11 @@ async def accept_ride(
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
 ):
+    await manager.send_notification(
+        ride_id=ride.id,
+        title ="Ride Accepted",
+        message="Your driver has accepted the ride"
+    )
     active_ride = db.query(Ride).filter(
         Ride.driver_id == current_driver.id,
         Ride.status.in_(["ACCEPTED", "STARTED"])
@@ -182,6 +187,11 @@ async def start_ride(
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
 ):
+    await manager.send_notification(
+    ride_id=ride.id,
+    title="Ride Started",
+    message="Your ride has started"
+)
     ride = (
         db.query(Ride)
         .filter(Ride.id == ride_id)
@@ -230,6 +240,11 @@ async def complete_ride(
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
 ):
+    await manager.send_notification(
+    ride_id=ride.id,
+    title="Ride Completed",
+    message="Your ride has been completed successfully"
+)
     ride = (
         db.query(Ride)
         .filter(Ride.id == ride_id)
@@ -498,4 +513,3 @@ def get_nearby_rides(
         "total_nearby_rides": len(nearby_rides),
         "rides": nearby_rides
     }
-    
