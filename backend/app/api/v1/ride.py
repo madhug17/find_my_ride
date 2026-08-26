@@ -182,7 +182,7 @@ def ride_history(
     return rides
 
 @router.put("/{ride_id}/cancel")
-def cancel_ride(
+async def cancel_ride(
     ride_id:int,
     db:Session=Depends(get_db),
     current_student:Student=Depends(get_current_student)
@@ -207,6 +207,18 @@ def cancel_ride(
     ride.status="CANCELLED"
     db.commit()
     db.refresh(ride)
+
+    await manager.send_status(
+        ride_id=ride.id,
+        status=ride.status
+    )
+    
+    await manager.send_notification(
+            ride_id=ride.id,
+            title="Ride Cancelled",
+            message="Your ride has been cancelled"
+    )
+
     return {
         "message": "Ride cancelled successfully",
         "ride_id": ride.id,
