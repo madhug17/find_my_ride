@@ -77,6 +77,42 @@ def get_driver_location(
         "longitude": driver.longitude
     }
 
+@router.get('/search')
+def search_ride(
+    status: str=None,
+    pickup:str=None,
+    db:Session=Depends(get_db),
+    current_student:Student=Depends(get_current_student)
+):
+    query = db.query(Ride).filter(
+        Ride.student_id==current_student.id
+    )
+    if status:
+        query = query.filter(
+            Ride.status == status.upper()
+        )
+    if pickup:
+        query = query.filter(
+            Ride.pickup_loc.ilike(f"%{pickup}%")
+        )
+    rides = query.order_by(
+        Ride.created_at.desc()
+    ).all()
+    return{
+        "total_rides": len(rides),
+        "rides": [
+            {
+                "ride_id": ride.id,
+                "pickup_loc": ride.pickup_loc,
+                "drop_loc": ride.drop_loc,
+                "status": ride.status,
+                "created_at": ride.created_at
+            }
+            for ride in rides
+        ]
+    }
+
+
 @router.websocket("/ws/{ride_id}")
 async def ride_location_websocket(
     websocket:WebSocket,
@@ -304,48 +340,6 @@ def ride_history(
         student_id=current_student.id,
         status=status
     )
-
-    return {
-        "total_rides": len(rides),
-        "rides": [
-            {
-                "ride_id": ride.id,
-                "pickup_loc": ride.pickup_loc,
-                "drop_loc": ride.drop_loc,
-                "status": ride.status,
-                "created_at": ride.created_at
-            }
-            for ride in rides
-        ]
-    }
-
-
-@router.get("/search")
-def search_rides(
-    status: Optional[str] = None,
-    pickup: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_student: Student = Depends(get_current_student)
-):
-    query = db.query(Ride).filter(
-        Ride.student_id == current_student.id
-    )
-
-    if status:
-        query = query.filter(
-            Ride.status == status.upper()
-        )
-
-    if pickup:
-        query = query.filter(
-            Ride.pickup_loc.ilike(
-                f"%{pickup}%"
-            )
-        )
-
-    rides = query.order_by(
-        Ride.created_at.desc()
-    ).all()
 
     return {
         "total_rides": len(rides),

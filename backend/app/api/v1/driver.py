@@ -13,6 +13,7 @@ from app.db.models.driver import Driver
 from app.db.models.ride import Ride
 from app.websocket.connection_manager import manager
 from app.db.models.rating import Rating
+from app.utils.distance import calculate_distance
 
 
 router = APIRouter(
@@ -106,11 +107,6 @@ async def accept_ride(
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
 ):
-    await manager.send_notification(
-        ride_id=ride.id,
-        title ="Ride Accepted",
-        message="Your driver has accepted the ride"
-    )
     active_ride = db.query(Ride).filter(
         Ride.driver_id == current_driver.id,
         Ride.status.in_(["ACCEPTED", "STARTED"])
@@ -121,11 +117,13 @@ async def accept_ride(
             status_code=400,
             detail="You already have an active ride"
         )
+
     if not current_driver.is_available:
         raise HTTPException(
             status_code=400,
             detail="Driver is currently unavailable"
         )
+
     updated_rows = (
         db.query(Ride)
         .filter(
@@ -158,21 +156,27 @@ async def accept_ride(
             status_code=409,
             detail="Ride is no longer available"
         )
-        
+
     current_driver.is_available = False
     db.commit()
     db.refresh(current_driver)
-    
+
+    # Fetch the now-updated ride AFTER the update succeeds, then notify.
     ride = db.query(Ride).filter(
         Ride.id == ride_id
     ).first()
     db.refresh(ride)
 
+    await manager.send_notification(
+        ride_id=ride.id,
+        title="Ride Accepted",
+        message="Your driver has accepted the ride"
+    )
     await manager.send_status(
         ride_id=ride.id,
         status=ride.status
     )
-    
+
     return {
         "message": "Ride accepted successfully",
         "ride_id": ride.id,
@@ -187,11 +191,6 @@ async def start_ride(
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
 ):
-    await manager.send_notification(
-    ride_id=ride.id,
-    title="Ride Started",
-    message="Your ride has started"
-)
     ride = (
         db.query(Ride)
         .filter(Ride.id == ride_id)
@@ -221,6 +220,12 @@ async def start_ride(
     db.commit()
     db.refresh(ride)
 
+    # Notify only after the ride is confirmed found and updated.
+    await manager.send_notification(
+        ride_id=ride.id,
+        title="Ride Started",
+        message="Your ride has started"
+    )
     await manager.send_status(
         ride_id=ride.id,
         status=ride.status
@@ -240,11 +245,6 @@ async def complete_ride(
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
 ):
-    await manager.send_notification(
-    ride_id=ride.id,
-    title="Ride Completed",
-    message="Your ride has been completed successfully"
-)
     ride = (
         db.query(Ride)
         .filter(Ride.id == ride_id)
@@ -270,11 +270,17 @@ async def complete_ride(
         )
 
     ride.status = "COMPLETED"
-    
     current_driver.is_available = True
 
     db.commit()
     db.refresh(ride)
+
+    # Notify only after the ride is confirmed found and updated.
+    await manager.send_notification(
+        ride_id=ride.id,
+        title="Ride Completed",
+        message="Your ride has been completed successfully"
+    )
     await manager.send_status(
         ride_id=ride.id,
         status=ride.status
@@ -369,75 +375,34 @@ async def update_driver_location(
         "latitude": data.latitude,
         "longitude": data.longitude
     }
-from app.utils.distance import calculate_distance
-from app.db.models.ride import Ride
 
-@router.get("/rides/nearby")
-def get_nearby_distance(
-    radius_km:float=5.0,
-    db:Session = Depends(get_db),
-    current_driver:Driver = Depends(get_current_driver)
-):
-    if current_driver.latitude is None or current_driver.longitude is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Driver location is not available"
-        )
-    rides = db.query(Ride).filter(
-        Ride.status == "PENDING",Ride.driver_id.is_(None)
-    ).all()
-    nearby_rides = []
-    for ride in rides:
-        distance = calculate_distance(
-            current_driver.latitude,
-            current_driver.longitude,
-            ride.pickup_lat,
-            ride.pickup_lng
-        )
-        if distance <= radius_km:
-            nearby_rides.append({
-                "ride_id": ride.id,
-                "pickup_loc": ride.pickup_loc,
-                "drop_loc": ride.drop_loc,
-                "pickup_lat": ride.pickup_lat,
-                "pickup_lng": ride.pickup_lng,
-                "drop_lat": ride.drop_lat,
-                "drop_lng": ride.drop_lng,
-                "distance_km": round(distance, 2),
-                "status": ride.status
-            })
-            nearby_rides.sort(key=lambda ride: ride["distance_km"])
-            return {
-                "radius_km": radius_km,
-                "total_nearby_rides": len(nearby_rides),
-                "rides": nearby_rides
-            }
+
 @router.get("/debug/my-active-rides")
 def debug_my_active_rides(
-    db:Session= Depends(get_db),
-    current_driver : Driver = Depends(get_current_driver)
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
 ):
     rides = db.query(Ride).filter(
         Ride.driver_id == current_driver.id
     ).all()
-    return[
+    return [
         {
-
             "id": ride.id,
             "status": ride.status,
             "driver_id": ride.driver_id
         }
-    for ride in rides
+        for ride in rides
     ]
+
 
 @router.get("/rides/nearby")
 def get_nearby_rides(
-    radius_km : float=5.0,
-    limit:int=10,
-    db:Session=Depends(get_db),
-    current_driver: Driver=Depends(get_current_driver)
+    radius_km: float = 5.0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
 ):
-    if radius_km<=0:
+    if radius_km <= 0:
         raise HTTPException(
             status_code=400,
             detail="Radius must be greater than 0"
@@ -491,7 +456,6 @@ def get_nearby_rides(
         )
 
         if distance <= radius_km:
-
             nearby_rides.append({
                 "ride_id": ride.id,
                 "pickup_loc": ride.pickup_loc,
@@ -503,10 +467,10 @@ def get_nearby_rides(
                 "distance_km": round(distance, 2),
                 "status": ride.status
             })
-    nearby_rides.sort(
-        key=lambda ride: ride["distance_km"]
-    )
+
+    nearby_rides.sort(key=lambda r: r["distance_km"])
     nearby_rides = nearby_rides[:limit]
+
     return {
         "radius_km": radius_km,
         "limit": limit,
