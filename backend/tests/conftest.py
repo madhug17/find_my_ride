@@ -16,3 +16,10 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.db.database import engine
 from app.db.base import Base
+
+@pytest.fixture
+def client():
+    Base.metadata.create_all(bind=engine)
+    with TestClient(app) as test_client:
+        yield test_client
+    Base.metadata.drop_all(bind=engine)

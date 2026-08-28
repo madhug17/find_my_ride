@@ -5,7 +5,7 @@ class DriverRegister(BaseModel):
     phone: int
     vehicle_type: str
     password: str
-    vehicle_number : int
+    vehicle_number : str
 class DriverLogin(BaseModel):
     email: EmailStr
     password: str

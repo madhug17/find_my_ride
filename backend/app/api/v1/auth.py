@@ -22,6 +22,7 @@ def register(
         return {
             "message": "Student registered successfully",
             "id": student.id,
+            "name": student.name,
             "email": student.email,
         }
 
