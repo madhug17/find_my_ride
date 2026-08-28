@@ -1,17 +1,4 @@
 services:
-  api:
-    build: .
-    container_name: find-my-ride-api
-
-    ports:
-      - "8000:8000"
-
-    env_file:
-      - .env
-
-    depends_on:
-      db:
-        condition: service_healthy
 
   db:
     image: postgres:17
@@ -23,16 +10,32 @@ services:
       POSTGRES_DB: find_my_ride
 
     ports:
-      - "5432:5432"
+      - "5434:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d find_my_ride"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+
+
+  api:
+    build: .
+    container_name: find-my-ride-api
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      DATABASE_URL: postgresql://postgres:1658@db:5432/find_my_ride
+
+    depends_on:
+      db:
+        condition: service_healthy
+
 
 volumes:
   postgres_data:
