@@ -12,11 +12,11 @@ from app.db.models.driver import Driver
 from app.schemas.rating import RatingCreate
 from app.db.models.rating import Rating
 router = APIRouter(
-    prefix='/ride',
+    prefix='/rides',
     tags=['RIde']
 )
 
-@router.post('/book')
+@router.post('/',status_code=201)
 def create_new_ride(
     data: RideCreate,
     db: Session = Depends(get_db),
