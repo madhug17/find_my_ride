@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Find My Ride - Student</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Find My Ride</h1>
+
+        <h2>Student Dashboard</h2>
+
+        <p id="loginStatus">
+            Checking login...
+        </p>
+
+        <button id="logoutBtn">
+            Logout
+        </button>
+
+        <hr>
+
+        <h2>Book a Ride</h2>
+
+        <form id="rideForm">
+
+            <label>
+                Pickup Location
+            </label>
+
+            <input
+                type="text"
+                id="pickup_loc"
+                placeholder="Woxsen University"
+                required
+            >
+
+            <label>
+                Drop Location
+            </label>
+
+            <input
+                type="text"
+                id="drop_loc"
+                placeholder="Hyderabad"
+                required
+            >
+
+            <label>
+                Pickup Latitude
+            </label>
+
+            <input
+                type="number"
+                step="any"
+                id="pickup_lat"
+                placeholder="17.5454"
+                required
+            >
+
+            <label>
+                Pickup Longitude
+            </label>
+
+            <input
+                type="number"
+                step="any"
+                id="pickup_lng"
+                placeholder="78.5718"
+                required
+            >
+
+            <label>
+                Drop Latitude
+            </label>
+
+            <input
+                type="number"
+                step="any"
+                id="drop_lat"
+                placeholder="17.3850"
+                required
+            >
+
+            <label>
+                Drop Longitude
+            </label>
+
+            <input
+                type="number"
+                step="any"
+                id="drop_lng"
+                placeholder="78.4867"
+                required
+            >
+
+            <button type="submit">
+                Book Ride
+            </button>
+
+        </form>
+
+        <p id="rideMessage"></p>
+
+        <div id="rideResult"></div>
+
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/student.js"></script>
+
+</body>
+</html>

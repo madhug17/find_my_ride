@@ -1,63 +1,170 @@
-const API_URL = "http://localhost:30080";
+document.addEventListener("DOMContentLoaded", () => {
 
+    // =========================
+    // STUDENT LOGIN
+    // =========================
 
-document
-    .getElementById("loginForm")
-    .addEventListener("submit", async function(event) {
+    const studentLoginForm =
+        document.getElementById("studentLoginForm");
 
-        event.preventDefault();
+    if (studentLoginForm) {
 
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
+        studentLoginForm.addEventListener("submit", async (e) => {
 
-        const message = document.getElementById("message");
+            e.preventDefault();
 
-        try {
+            const email =
+                document.getElementById("email").value.trim();
 
-            const formData = new URLSearchParams();
+            const password =
+                document.getElementById("password").value;
 
-            formData.append("username", email);
-            formData.append("password", password);
+            const message =
+                document.getElementById("message");
 
-            const response = await fetch(
-                `${API_URL}/auth/login`,
-                {
-                    method: "POST",
+            message.textContent = "Logging in...";
 
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded"
-                    },
+            try {
 
-                    body: formData
+                const response = await fetch(
+                    `${API_URL}/auth/login`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/x-www-form-urlencoded"
+                        },
+
+                        body: new URLSearchParams({
+                            username: email,
+                            password: password
+                        })
+                    }
+                );
+
+                const result = await response.json();
+
+                console.log("Login response:", result);
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.detail || "Login failed"
+                    );
                 }
-            );
 
-            const data = await response.json();
+                localStorage.setItem(
+                    "access_token",
+                    result.access_token
+                );
 
-            if (!response.ok) {
+                localStorage.setItem(
+                    "user_email",
+                    email
+                );
 
                 message.textContent =
-                    data.detail || "Login failed";
+                    "Login successful!";
 
-                return;
+                window.location.href = "student.html";
+
+            } catch (error) {
+
+                console.error(error);
+
+                message.textContent =
+                    error.message;
             }
+        });
+    }
 
-            localStorage.setItem(
-                "access_token",
-                data.access_token
-            );
 
-            message.textContent = "Login successful!";
+    // =========================
+    // STUDENT REGISTER
+    // =========================
 
-            window.location.href = "student.html";
+    const studentRegisterForm =
+        document.getElementById("studentRegisterForm");
 
-        } catch (error) {
+    if (studentRegisterForm) {
 
-            console.error(error);
+        studentRegisterForm.addEventListener(
+            "submit",
+            async (e) => {
 
-            message.textContent =
-                "Unable to connect to backend.";
+                e.preventDefault();
 
-        }
+                const name =
+                    document.getElementById("name").value.trim();
 
-    });
+                const email =
+                    document.getElementById("email").value.trim();
+
+                const phone =
+                    document.getElementById("phone").value.trim();
+
+                const password =
+                    document.getElementById("password").value;
+
+                const message =
+                    document.getElementById("message");
+
+                message.textContent =
+                    "Registering...";
+
+                try {
+
+                    const response = await fetch(
+                        `${API_URL}/auth/register`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                name,
+                                email,
+                                phone,
+                                password
+                            })
+                        }
+                    );
+
+                    const result =
+                        await response.json();
+
+                    console.log(
+                        "Register response:",
+                        result
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.detail ||
+                            "Registration failed"
+                        );
+                    }
+
+                    message.textContent =
+                        "Registration successful!";
+
+                    setTimeout(() => {
+                        window.location.href =
+                            "login.html";
+                    }, 1000);
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    message.textContent =
+                        error.message;
+                }
+            }
+        );
+    }
+
+});

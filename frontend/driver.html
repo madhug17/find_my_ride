@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Find My Ride - Driver Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🚗 Find My Ride</h1>
+
+    <h2>Driver Dashboard</h2>
+
+    <p id="driverStatus">
+        Checking login...
+    </p>
+
+    <button id="driverLogoutBtn">
+        Logout
+    </button>
+
+    <hr>
+
+    <h2>🚘 Driver Status</h2>
+
+    <button id="availableBtn">
+        I'm Available
+    </button>
+
+    <button
+        id="unavailableBtn"
+        class="danger"
+    >
+        I'm Not Available
+    </button>
+
+    <p id="availabilityMessage"></p>
+
+    <hr>
+
+    <h2>📍 Current Ride</h2>
+
+    <div id="currentRide">
+
+        <p>
+            No ride assigned yet.
+        </p>
+
+    </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/driver.js"></script>
+
+</body>
+
+</html>

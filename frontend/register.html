@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find My Ride - Student Login</title>
+    <title>Find My Ride - Student Register</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -13,14 +13,28 @@
 
     <h1>🚗 Find My Ride</h1>
 
-    <h2>Student Login</h2>
+    <h2>Student Registration</h2>
 
-    <form id="studentLoginForm">
+    <form id="studentRegisterForm">
+
+        <input
+            type="text"
+            id="name"
+            placeholder="Full Name"
+            required
+        >
 
         <input
             type="email"
             id="email"
             placeholder="Email"
+            required
+        >
+
+        <input
+            type="text"
+            id="phone"
+            placeholder="Phone Number"
             required
         >
 
@@ -31,20 +45,15 @@
             required
         >
 
-        <button type="submit">Login</button>
+        <button type="submit">Register</button>
 
     </form>
 
     <p id="message"></p>
 
     <p>
-        Don't have an account?
-        <a href="register.html">Register</a>
-    </p>
-
-    <p>
-        Are you a driver?
-        <a href="driver-login.html">Driver Login</a>
+        Already have an account?
+        <a href="login.html">Login</a>
     </p>
 
 </div>
