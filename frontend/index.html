@@ -1,55 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find My Ride</title>
+    <title>Find My Ride — Unified Campus Ride Portal</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body>
+<body class="unified-portal-body">
 
-<div class="container">
+    <!-- High-Contrast Night City Vector Map Overlay -->
+    <div class="city-map-overlay"></div>
 
-    <h1>🚗 Find My Ride</h1>
+    <!-- BRAND LOGO HEADER -->
+    <header class="portal-brand-header">
+        <a href="index.html" class="brand-logo">
+            <span>Find My Ride</span>
+        </a>
+    </header>
 
-    <p>Campus Ride Booking System</p>
+    <!-- UNIFIED LOGIN CARD -->
+    <main class="unified-auth-card">
 
-    <hr>
-
-    <h2>Choose Portal</h2>
-
-    <div class="portal-container">
-
-        <div class="portal-card">
-            <h3>🎓 Student</h3>
-            <p>Book and track your campus ride.</p>
-
-            <a href="login.html">
-                <button>Student Login</button>
-            </a>
-
-            <a href="register.html">
-                <button class="secondary">Student Register</button>
-            </a>
+        <!-- Segmented Role Controller (Student | Driver) -->
+        <div class="segmented-control-wrapper" id="segmentedTrack">
+            <div class="pill-highlight" id="pillHighlight"></div>
+            <button type="button" class="role-btn active" id="btnRoleStudent" onclick="switchPortalRole('student')">
+                Student
+            </button>
+            <button type="button" class="role-btn" id="btnRoleDriver" onclick="switchPortalRole('driver')">
+                Driver
+            </button>
         </div>
 
-        <div class="portal-card">
-            <h3>🚘 Driver</h3>
-            <p>Manage rides and update your availability.</p>
-
-            <a href="driver-login.html">
-                <button>Driver Login</button>
-            </a>
-
-            <a href="driver-register.html">
-                <button class="secondary">Driver Register</button>
-            </a>
+        <!-- DYNAMIC CARD HEADER -->
+        <div class="portal-card-header">
+            <h1 id="portalTitle">Student Login</h1>
+            <p id="portalSubtitle">Book campus rides instantly & track live arrivals</p>
         </div>
 
-    </div>
+        <!-- DYNAMIC UNIFIED LOGIN FORM -->
+        <form id="unifiedLoginForm">
+            <div class="form-group-uber">
+                <label for="loginUsername" id="userLabel">Student Email / ID</label>
+                <input type="text" id="loginUsername" class="input-uber" placeholder="name@woxsen.edu.in" required autocomplete="username">
+            </div>
 
-</div>
+            <div class="form-group-uber">
+                <label for="loginPassword" id="passLabel">Password</label>
+                <input type="password" id="loginPassword" class="input-uber" placeholder="••••••••" required autocomplete="current-password">
+            </div>
 
+            <button type="submit" id="submitBtn" class="btn-rapido">
+                <span id="submitIcon">→</span>
+                <span id="submitBtnText">Get Started as Student</span>
+            </button>
+        </form>
+
+        <div id="portalMessage" class="form-status-msg"></div>
+
+        <!-- FOOTER LINKS -->
+        <div class="portal-card-footer">
+            <p style="margin-bottom: 8px;">
+                <a href="#" onclick="toast('Please contact campus admin to reset your credentials', 'info'); return false;">Forgot Password?</a>
+            </p>
+            <p id="signupLinkText">
+                New Student? <a href="register.html">Create Account</a>
+            </p>
+        </div>
+
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
 </body>
+
 </html>

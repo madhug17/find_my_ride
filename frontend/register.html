@@ -1,65 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find My Ride - Student Register</title>
+    <title>Student Registration — Find My Ride</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
 
-<div class="container">
+    <div class="auth-container">
+        <div class="auth-card">
 
-    <h1>🚗 Find My Ride</h1>
+            <h1>Find My Ride</h1>
+            <h2>Student Registration</h2>
+            <p class="subtitle">Create an account to start booking campus rides</p>
 
-    <h2>Student Registration</h2>
+            <form id="studentRegisterForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" placeholder="John Doe" required autocomplete="name">
+                </div>
 
-    <form id="studentRegisterForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="john@woxsen.edu.in" required autocomplete="email">
+                </div>
 
-        <input
-            type="text"
-            id="name"
-            placeholder="Full Name"
-            required
-        >
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" placeholder="+91 9876543210" required autocomplete="tel">
+                </div>
 
-        <input
-            type="email"
-            id="email"
-            placeholder="Email"
-            required
-        >
+                <div class="form-group">
+                    <label for="password">Create Password</label>
+                    <input type="password" id="password" placeholder="Min. 6 characters" required autocomplete="new-password">
+                </div>
 
-        <input
-            type="text"
-            id="phone"
-            placeholder="Phone Number"
-            required
-        >
+                <button type="submit" style="margin-top: 10px;">
+                    Create Account
+                </button>
+            </form>
 
-        <input
-            type="password"
-            id="password"
-            placeholder="Password"
-            required
-        >
+            <div id="message" style="margin-top: 15px; font-weight: 600; font-size: 14px; text-align: center;"></div>
 
-        <button type="submit">Register</button>
+            <div class="auth-links">
+                <p>Already registered? <a href="login.html">Login here</a></p>
+                <p><a href="index.html">← Back to Home</a></p>
+            </div>
 
-    </form>
+        </div>
+    </div>
 
-    <p id="message"></p>
-
-    <p>
-        Already have an account?
-        <a href="login.html">Login</a>
-    </p>
-
-</div>
-
-<script src="js/config.js"></script>
-<script src="js/auth.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
 
 </body>
+
 </html>

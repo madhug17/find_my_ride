@@ -477,3 +477,118 @@ def get_nearby_rides(
         "total_nearby_rides": len(nearby_rides),
         "rides": nearby_rides
     }
+
+
+@router.get("/rides/current")
+def get_driver_current_ride(
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
+):
+    ride = db.query(Ride).filter(
+        Ride.driver_id == current_driver.id,
+        Ride.status.in_(["ACCEPTED", "STARTED"])
+    ).order_by(Ride.updated_at.desc()).first()
+
+    if ride is None:
+        return {
+            "message": "No active trip found",
+            "ride": None
+        }
+
+    response = {
+        "id": ride.id,
+        "ride_id": ride.id,
+        "pickup_loc": ride.pickup_loc,
+        "drop_loc": ride.drop_loc,
+        "pickup_lat": ride.pickup_lat,
+        "pickup_lng": ride.pickup_lng,
+        "drop_lat": ride.drop_lat,
+        "drop_lng": ride.drop_lng,
+        "status": ride.status,
+        "created_at": ride.created_at
+    }
+
+    if ride.student:
+        response["passenger"] = {
+            "id": ride.student.id,
+            "name": ride.student.name,
+            "phone": ride.student.phone,
+            "email": ride.student.email
+        }
+
+    return {
+        "message": "Active ride found",
+        "ride": response
+    }
+
+
+@router.get("/rides/history")
+def get_driver_ride_history(
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
+):
+    rides = db.query(Ride).filter(
+        Ride.driver_id == current_driver.id,
+        Ride.status.in_(["COMPLETED", "CANCELLED"])
+    ).order_by(Ride.updated_at.desc()).all()
+
+    return {
+        "total_rides": len(rides),
+        "rides": [
+            {
+                "ride_id": ride.id,
+                "pickup_loc": ride.pickup_loc,
+                "drop_loc": ride.drop_loc,
+                "status": ride.status,
+                "created_at": ride.created_at,
+                "passenger_name": ride.student.name if ride.student else "Passenger"
+            }
+            for ride in rides
+        ]
+    }
+
+
+@router.get("/rides/{ride_id}")
+def get_driver_ride_details(
+    ride_id: int,
+    db: Session = Depends(get_db),
+    current_driver: Driver = Depends(get_current_driver)
+):
+    ride = db.query(Ride).filter(
+        Ride.id == ride_id
+    ).first()
+
+    if ride is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ride not found"
+        )
+
+    if ride.driver_id != current_driver.id and ride.status != "PENDING":
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to view this ride"
+        )
+
+    response = {
+        "id": ride.id,
+        "ride_id": ride.id,
+        "pickup_loc": ride.pickup_loc,
+        "drop_loc": ride.drop_loc,
+        "pickup_lat": ride.pickup_lat,
+        "pickup_lng": ride.pickup_lng,
+        "drop_lat": ride.drop_lat,
+        "drop_lng": ride.drop_lng,
+        "status": ride.status,
+        "created_at": ride.created_at
+    }
+
+    if ride.student:
+        response["passenger"] = {
+            "id": ride.student.id,
+            "name": ride.student.name,
+            "phone": ride.student.phone,
+            "email": ride.student.email
+        }
+
+    return response

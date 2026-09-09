@@ -1,20 +1,40 @@
 /* ============================================================
-   CAMPUS RIDES — shared UI helpers
+   FIND MY RIDE — Shared UI & Location Helpers
    ============================================================ */
 
-/* Fixed campus points used by the booking map. Coordinates are
-   plotted in a 300x200 viewBox shared by every map render. */
-const LOCATIONS = [
-  { id: 'gate',    name: 'Main Gate',        x: 24,  y: 168 },
-  { id: 'library', name: 'Library',          x: 92,  y: 58  },
-  { id: 'hostelA', name: 'Hostel Block A',   x: 188, y: 152 },
-  { id: 'cafe',    name: 'Cafeteria',        x: 142, y: 34  },
-  { id: 'csdept',  name: 'CS Department',    x: 244, y: 92  },
-  { id: 'aud',     name: 'Auditorium',       x: 58,  y: 118 },
-  { id: 'mall',    name: 'City Mall',        x: 276, y: 170 },
-  { id: 'station', name: 'Railway Station',  x: 258, y: 20  }
+const CAMPUS_LOCATIONS = [
+  { id: 'gate',    name: 'Main Gate',        lat: 17.5454, lng: 78.5718 },
+  { id: 'library', name: 'Central Library',  lat: 17.5470, lng: 78.5730 },
+  { id: 'hostelA', name: 'Hostel Block A',   lat: 17.5440, lng: 78.5745 },
+  { id: 'cafe',    name: 'Cafeteria Hub',    lat: 17.5460, lng: 78.5725 },
+  { id: 'csdept',  name: 'CS Department',    lat: 17.5480, lng: 78.5710 },
+  { id: 'aud',     name: 'Auditorium',       lat: 17.5435, lng: 78.5705 },
+  { id: 'mall',    name: 'City Mall',        lat: 17.5100, lng: 78.5500 },
+  { id: 'station', name: 'Railway Station',  lat: 17.4950, lng: 78.5300 }
 ];
-function locationById(id) { return LOCATIONS.find(l => l.id === id); }
+
+function locationById(id) {
+  return CAMPUS_LOCATIONS.find(l => l.id === id);
+}
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function calculateEstimatedFare(distKm) {
+  if (!distKm || distKm <= 0) return 30;
+  const baseFare = 30;
+  const ratePerKm = 15;
+  return Math.round(baseFare + (distKm * ratePerKm));
+}
 
 function toast(message, type = 'info') {
   let stack = document.querySelector('.toast-stack');
@@ -25,69 +45,76 @@ function toast(message, type = 'info') {
   }
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.textContent = message;
+  el.innerHTML = `
+    <span class="toast-dot ${type}"></span>
+    <span class="toast-text">${escapeHtml(message)}</span>
+  `;
   stack.appendChild(el);
   setTimeout(() => {
-    el.style.transition = 'opacity .25s ease, transform .25s ease';
+    el.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
     el.style.opacity = '0';
-    el.style.transform = 'translateY(-6px)';
-    setTimeout(() => el.remove(), 250);
-  }, 3200);
+    el.style.transform = 'translateY(-10px) scale(0.95)';
+    setTimeout(() => el.remove(), 300);
+  }, 3500);
 }
 
-function requireStudent() {
-  const student = API.currentStudent();
-  if (!student) { window.location.href = 'login.html'; return null; }
-  return student;
-}
-function requireDriver() {
-  const driver = API.currentDriver();
-  if (!driver) { window.location.href = 'driver-login.html'; return null; }
-  return driver;
-}
-
-function initials(name) {
-  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
-function timeAgo(ts) {
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return 'just now';
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m} min ago`;
-  const h = Math.floor(m / 60);
-  return `${h} hr ago`;
+function statusBadge(status) {
+  const s = String(status || '').toUpperCase();
+  let badgeClass = 'badge-pending';
+  let text = 'PENDING';
+
+  if (s === 'ACCEPTED') {
+    badgeClass = 'badge-accepted';
+    text = 'ACCEPTED';
+  } else if (s === 'STARTED' || s === 'ENROUTE') {
+    badgeClass = 'badge-started';
+    text = 'EN ROUTE';
+  } else if (s === 'COMPLETED') {
+    badgeClass = 'badge-completed';
+    text = 'COMPLETED';
+  } else if (s === 'CANCELLED') {
+    badgeClass = 'badge-cancelled';
+    text = 'CANCELLED';
+  }
+
+  return `<span class="status-badge ${badgeClass}">${text}</span>`;
 }
 
-function money(n) { return `₹${n}`; }
-
-const STATUS_LABEL = {
-  searching: 'Finding a ride',
-  accepted: 'Driver on the way',
-  enroute: 'Trip in progress',
-  arrived: 'Arrived at drop',
-  completed: 'Completed',
-  cancelled: 'Cancelled'
-};
-const STATUS_PILL_CLASS = {
-  searching: 'pill-searching',
-  accepted: 'pill-accepted',
-  enroute: 'pill-enroute',
-  arrived: 'pill-arrived',
-  completed: 'pill-completed',
-  cancelled: 'pill-cancelled'
-};
-
-function statusPill(status) {
-  return `<span class="pill ${STATUS_PILL_CLASS[status] || ''}"><span class="pill-dot"></span>${STATUS_LABEL[status] || status}</span>`;
-}
-
-function wireLogoutButtons() {
-  document.querySelectorAll('[data-logout]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      API.logout();
-      window.location.href = 'index.html';
+function formatDateTime(isoString) {
+  if (!isoString) return 'N/A';
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
-  });
+  } catch {
+    return isoString;
+  }
 }
-document.addEventListener('DOMContentLoaded', wireLogoutButtons);
+
+function logout() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("user_email");
+  localStorage.removeItem("user_role");
+  toast("Logged out successfully", "info");
+  setTimeout(() => {
+    window.location.href = "index.html";
+  }, 400);
+}
+
+window.logout = logout;
+window.toast = toast;
+window.statusBadge = statusBadge;

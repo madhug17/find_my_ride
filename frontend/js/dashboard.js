@@ -1,96 +1,90 @@
-const API_URL = "http://localhost:8000";
+document.addEventListener("DOMContentLoaded", () => {
 
-(() => {
-  const student = requireStudent();
-  if (!student) return;
-
-  const rideForm = document.getElementById("rideForm");
-  if (!rideForm) return;
-
-  rideForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    // Fetched inside the listener to ensure the token is always fresh
-    const token = localStorage.getItem("token");
-    const rideMessage = document.getElementById("rideMessage");
-
-    const rideData = {
-      pickup_loc: document.getElementById("pickup_loc").value.trim(),
-      drop_loc: document.getElementById("drop_loc").value.trim(),
-      pickup_lat: parseFloat(document.getElementById("pickup_lat").value),
-      pickup_lng: parseFloat(document.getElementById("pickup_lng").value),
-      drop_lat: parseFloat(document.getElementById("drop_lat").value),
-      drop_lng: parseFloat(document.getElementById("drop_lng").value)
-    };
-
-    if (
-      !rideData.pickup_loc ||
-      !rideData.drop_loc ||
-      Number.isNaN(rideData.pickup_lat) ||
-      Number.isNaN(rideData.pickup_lng) ||
-      Number.isNaN(rideData.drop_lat) ||
-      Number.isNaN(rideData.drop_lng)
-    ) {
-      rideMessage.textContent = "Please enter all ride details.";
-      return;
-    }
-
-    const submitBtn = rideForm.querySelector('button[type="submit"]');
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Booking...";
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/rides/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(rideData)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        rideMessage.textContent = result.detail || "Ride booking failed.";
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+        window.location.href = "login.html";
         return;
-      }
-
-      rideMessage.textContent = "Ride booked successfully!";
-
-      // Safely injecting text to prevent XSS
-      const statusText = typeof STATUS_LABEL !== "undefined"
-        ? (STATUS_LABEL[result.status] || result.status)
-        : result.status;
-      
-      const rideId = result.ride_id ?? result.id;
-
-      const detailsContainer = document.getElementById("rideDetails");
-      detailsContainer.innerHTML = ""; // Clear existing content
-      
-      const containerDiv = document.createElement("div");
-      containerDiv.className = "ride-item";
-      containerDiv.innerHTML = `
-        <p><strong>Ride ID:</strong> <span id="r_id"></span></p>
-        <p><strong>Status:</strong> <span id="r_status"></span></p>
-      `;
-      
-      detailsContainer.appendChild(containerDiv);
-      document.getElementById("r_id").textContent = rideId;
-      document.getElementById("r_status").textContent = statusText;
-
-      rideForm.reset();
-
-    } catch (error) {
-      console.error("Ride booking error:", error);
-      rideMessage.textContent = "Cannot connect to backend.";
-    } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Book ride";
-      }
     }
-  });
-})();
+
+    const rideDetails = document.getElementById("rideDetails");
+
+    async function loadDashboard() {
+        try {
+            // FIXED ENDPOINT: GET /rides/current
+            const response = await fetch(`${API_URL}/rides/current`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const result = await response.json();
+            console.log("Dashboard current ride:", result);
+
+            if (!response.ok) {
+                throw new Error(result.detail || "Failed to load current ride");
+            }
+
+            if (!rideDetails) return;
+
+            const ride = result.ride;
+            if (!ride) {
+                rideDetails.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Active Ride</h3>
+                        <p>You currently don't have an active ride.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const rideId = ride.ride_id ?? ride.id;
+
+            rideDetails.innerHTML = `
+                <div class="ride-card active-ride-card">
+                    <div class="ride-header">
+                        <h3>Current Ride #${rideId ?? "N/A"}</h3>
+                        ${typeof statusBadge === 'function' ? statusBadge(ride.status) : `<span>${escapeHtml(ride.status)}</span>`}
+                    </div>
+
+                    <p><strong>Pickup:</strong> ${escapeHtml(ride.pickup_loc ?? "N/A")}</p>
+                    <p><strong>Destination:</strong> ${escapeHtml(ride.drop_loc ?? "N/A")}</p>
+
+                    ${ride.driver ? `
+                        <div class="driver-info-box" style="margin-top: 12px;">
+                            <h4>Driver Details</h4>
+                            <p><strong>Name:</strong> ${escapeHtml(ride.driver.name ?? "N/A")}</p>
+                            <p><strong>Phone:</strong> ${escapeHtml(ride.driver.phone ?? "N/A")}</p>
+                            <p><strong>Vehicle Number:</strong> ${escapeHtml(ride.driver.vehicle_number ?? "N/A")}</p>
+                            <p><strong>Vehicle Type:</strong> ${escapeHtml(ride.driver.vehicle_type ?? "N/A")}</p>
+                        </div>
+                    ` : `
+                        <p style="margin-top: 10px; color: #f59e0b;">
+                            <strong>Driver:</strong> Waiting for driver acceptance...
+                        </p>
+                    `}
+                </div>
+            `;
+
+        } catch (error) {
+            console.error("Dashboard current ride error:", error);
+            if (rideDetails) {
+                rideDetails.innerHTML = `
+                    <div class="error-message">
+                        <p>Unable to load ride details.</p>
+                        <small>${escapeHtml(error.message)}</small>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    function escapeHtml(value) {
+        const div = document.createElement("div");
+        div.textContent = String(value ?? "");
+        return div.innerHTML;
+    }
+
+    loadDashboard();
+});

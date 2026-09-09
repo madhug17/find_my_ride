@@ -11,6 +11,7 @@ from app.websocket.connection_manager import manager
 from app.db.models.driver import Driver
 from app.schemas.rating import RatingCreate
 from app.db.models.rating import Rating
+from app.schemas.chat import ChatMessageCreate
 router = APIRouter(
     prefix='/rides',
     tags=['RIde']
@@ -115,20 +116,98 @@ def search_ride(
 
 @router.websocket("/ws/{ride_id}")
 async def ride_location_websocket(
-    websocket:WebSocket,
-    ride_id:int
+    websocket: WebSocket,
+    ride_id: int
 ):
-    await manager.connect(
-        ride_id,websocket
-    )
+    await manager.connect(ride_id, websocket)
     try:
         while True:
-            await websocket.receive_text()
+            data_str = await websocket.receive_text()
+            try:
+                import json
+                payload = json.loads(data_str)
+                if payload.get("type") == "chat_message":
+                    await manager.broadcast(ride_id, {
+                        "type": "chat_message",
+                        "ride_id": ride_id,
+                        "sender_role": payload.get("sender_role", "user"),
+                        "sender_name": payload.get("sender_name", "User"),
+                        "message": payload.get("message", ""),
+                        "timestamp": payload.get("timestamp", "")
+                    })
+            except Exception:
+                pass
     except WebSocketDisconnect:
-        manager.disconnect(
-            ride_id,
-            websocket
-        )
+        manager.disconnect(ride_id, websocket)
+
+@router.get("/{ride_id}/messages")
+def get_ride_messages(
+    ride_id: int,
+    db: Session = Depends(get_db)
+):
+    from app.db.models.chat import RideChatMessage
+    messages = db.query(RideChatMessage).filter(
+        RideChatMessage.ride_id == ride_id
+    ).order_by(RideChatMessage.created_at.asc()).all()
+
+    return [
+        {
+            "id": msg.id,
+            "ride_id": msg.ride_id,
+            "sender_role": msg.sender_role,
+            "sender_name": msg.sender_name,
+            "message": msg.message,
+            "created_at": msg.created_at.isoformat() if msg.created_at else ""
+        }
+        for msg in messages
+    ]
+
+@router.post("/{ride_id}/messages")
+async def post_ride_message(
+    ride_id: int,
+    data: ChatMessageCreate,
+    db: Session = Depends(get_db)
+):
+    from app.db.models.chat import RideChatMessage
+    from app.db.models.ride import Ride
+
+    ride = db.query(Ride).filter(Ride.id == ride_id).first()
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+
+    sender_role = getattr(data, "sender_role", "user")
+    sender_name = getattr(data, "sender_name", "User")
+
+    chat_msg = RideChatMessage(
+        ride_id=ride_id,
+        sender_role=sender_role,
+        sender_name=sender_name,
+        message=data.message
+    )
+    db.add(chat_msg)
+    db.commit()
+    db.refresh(chat_msg)
+
+    timestamp_str = chat_msg.created_at.strftime("%I:%M %p") if chat_msg.created_at else ""
+
+    # Broadcast via WebSocket
+    await manager.broadcast(ride_id, {
+        "type": "chat_message",
+        "ride_id": ride_id,
+        "sender_role": sender_role,
+        "sender_name": sender_name,
+        "message": data.message,
+        "timestamp": timestamp_str
+    })
+
+    return {
+        "id": chat_msg.id,
+        "ride_id": ride_id,
+        "sender_role": sender_role,
+        "sender_name": sender_name,
+        "message": data.message,
+        "created_at": timestamp_str
+    }
 
 @router.get("/{ride_id}/status")
 def get_ride_status(

@@ -2,72 +2,157 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Find My Ride - Driver Dashboard</title>
-
-    <link
-        rel="stylesheet"
-        href="css/style.css"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard — Find My Ride</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 
 <body>
 
-<div class="container">
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="index.html" class="logo">
+            Find My Ride Driver
+        </a>
+        <div class="nav-actions">
+            <div class="user-badge">
+                <span id="driverHeaderName">Driver Portal</span>
+            </div>
+            <button class="btn danger small-button" onclick="logout()">
+                Logout
+            </button>
+        </div>
+    </nav>
 
-    <h1>🚗 Find My Ride</h1>
+    <!-- DASHBOARD CONTAINER -->
+    <main class="dashboard-container">
 
-    <h2>Driver Dashboard</h2>
+        <div class="dashboard-header">
+            <div>
+                <h1>Driver Control Center</h1>
+                <p style="color: var(--text-muted);">Manage availability, accept ride requests, and navigate campus live.</p>
+            </div>
 
-    <p id="driverStatus">
-        Checking login...
-    </p>
+            <!-- Availability Toggle Switch -->
+            <div class="dashboard-card" style="margin-bottom: 0; padding: 14px 24px;">
+                <label class="switch-label">
+                    <span>Driver Online Status:</span>
+                    <label class="switch">
+                        <input type="checkbox" id="availabilityToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <strong id="availabilityText" style="color: #ef4444;">Offline</strong>
+                </label>
+            </div>
+        </div>
 
-    <button id="driverLogoutBtn">
-        Logout
-    </button>
+        <div class="input-row" style="grid-template-columns: 1fr 1fr; gap: 25px;">
 
-    <hr>
+            <!-- DRIVER PROFILE CARD -->
+            <section class="dashboard-card" style="margin-bottom: 0;">
+                <div class="section-header">
+                    <h2>Driver Profile</h2>
+                    <span class="status-badge badge-accepted">Verified Driver</span>
+                </div>
 
-    <h2>🚘 Driver Status</h2>
+                <div class="profile-grid">
+                    <div class="profile-stat">
+                        <strong>Driver Name</strong>
+                        <p id="driverName">Loading...</p>
+                    </div>
+                    <div class="profile-stat">
+                        <strong>Email Address</strong>
+                        <p id="driverEmail">Loading...</p>
+                    </div>
+                    <div class="profile-stat">
+                        <strong>Phone</strong>
+                        <p id="driverPhone">Loading...</p>
+                    </div>
+                    <div class="profile-stat">
+                        <strong>Vehicle Info</strong>
+                        <p id="driverVehicle">Loading...</p>
+                    </div>
+                </div>
+            </section>
 
-    <button id="availableBtn">
-        I'm Available
-    </button>
+            <!-- CURRENT ACTIVE RIDE CARD -->
+            <section class="dashboard-card" style="margin-bottom: 0;">
+                <div class="section-header">
+                    <h2>Current Active Trip</h2>
+                    <button id="refreshCurrentRideBtn" class="btn secondary small-button">
+                        Refresh
+                    </button>
+                </div>
 
-    <button
-        id="unavailableBtn"
-        class="danger"
-    >
-        I'm Not Available
-    </button>
+                <div id="driverCurrentRide">
+                    <div class="empty-state">
+                        <h3>No Active Trip</h3>
+                        <p>Set status to <strong>Online</strong> and accept a ride request below.</p>
+                    </div>
+                </div>
+            </section>
 
-    <p id="availabilityMessage"></p>
+        </div>
 
-    <hr>
+        <!-- DRIVER MAP & NAVIGATION -->
+        <section class="dashboard-card" style="margin-top: 25px;">
+            <div class="section-header">
+                <h2>Live Campus Driver Map</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="font-size: 13px; color: var(--text-muted);">Current Coords: <strong id="driverCoordText">17.5454, 78.5718</strong></span>
+                    <button id="useGpsBtnDriver" class="btn secondary small-button" style="background:rgba(59,130,246,0.15); border-color:var(--accent-primary); color:var(--accent-primary);">Use GPS Position</button>
+                    <button id="updateLocationBtn" class="btn secondary small-button">Set Location Here</button>
+                </div>
+            </div>
 
-    <h2>📍 Current Ride</h2>
+            <div class="map-wrapper">
+                <div id="driverMap" style="width: 100%; height: 360px; background: #0f172a;"></div>
+                <div class="map-overlay-info">
+                    <span>Click anywhere on map to update your live location or click Use GPS Position.</span>
+                </div>
+            </div>
+        </section>
 
-    <div id="currentRide">
+        <!-- AVAILABLE RIDE REQUESTS & NEARBY SEARCH -->
+        <section class="dashboard-card">
+            <div class="section-header">
+                <h2>Ride Requests & Nearby Rides</h2>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <label style="margin: 0; font-size: 13px;">Radius:</label>
+                    <input type="number" id="radiusKm" value="5" min="1" max="50" style="width: 80px; padding: 6px 10px;">
+                    <span style="font-size: 13px; color: var(--text-muted);">km</span>
+                    <button id="findNearbyBtn" class="btn secondary small-button">Search Nearby</button>
+                    <button id="refreshAvailableBtn" class="btn secondary small-button">Refresh All</button>
+                </div>
+            </div>
 
-        <p>
-            No ride assigned yet.
-        </p>
+            <div id="availableRides">
+                <div class="empty-state">
+                    <p>Loading available rides...</p>
+                </div>
+            </div>
+        </section>
 
-    </div>
+        <!-- PREVIOUS RIDES HISTORY -->
+        <section class="dashboard-card">
+            <div class="section-header">
+                <h2>Driver History</h2>
+            </div>
+            <div id="driverHistory">
+                <div class="empty-state">
+                    <p>Loading trip history...</p>
+                </div>
+            </div>
+        </section>
 
-</div>
+    </main>
 
-<script src="js/config.js"></script>
-<script src="js/driver.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/driver.js"></script>
 
 </body>
 

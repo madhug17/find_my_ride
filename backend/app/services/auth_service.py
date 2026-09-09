@@ -31,7 +31,7 @@ def register_student(db: Session, data):
     return create_student(db, student)
 
 
-def login_student(db: Session, email:str,password:str):
+def login_student(db: Session, email: str, password: str):
 
     student = get_student_by_email(
         db,

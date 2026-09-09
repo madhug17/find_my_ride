@@ -1,124 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Find My Ride - Student</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard — Find My Ride</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 
 <body>
 
-    <div class="container">
-
-        <h1>Find My Ride</h1>
-
-        <h2>Student Dashboard</h2>
-
-        <p id="loginStatus">
-            Checking login...
-        </p>
-
-        <button id="logoutBtn">
-            Logout
-        </button>
-
-        <hr>
-
-        <h2>Book a Ride</h2>
-
-        <form id="rideForm">
-
-            <label>
-                Pickup Location
-            </label>
-
-            <input
-                type="text"
-                id="pickup_loc"
-                placeholder="Woxsen University"
-                required
-            >
-
-            <label>
-                Drop Location
-            </label>
-
-            <input
-                type="text"
-                id="drop_loc"
-                placeholder="Hyderabad"
-                required
-            >
-
-            <label>
-                Pickup Latitude
-            </label>
-
-            <input
-                type="number"
-                step="any"
-                id="pickup_lat"
-                placeholder="17.5454"
-                required
-            >
-
-            <label>
-                Pickup Longitude
-            </label>
-
-            <input
-                type="number"
-                step="any"
-                id="pickup_lng"
-                placeholder="78.5718"
-                required
-            >
-
-            <label>
-                Drop Latitude
-            </label>
-
-            <input
-                type="number"
-                step="any"
-                id="drop_lat"
-                placeholder="17.3850"
-                required
-            >
-
-            <label>
-                Drop Longitude
-            </label>
-
-            <input
-                type="number"
-                step="any"
-                id="drop_lng"
-                placeholder="78.4867"
-                required
-            >
-
-            <button type="submit">
-                Book Ride
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="index.html" class="logo">
+            Find My Ride
+        </a>
+        <div class="nav-actions">
+            <div class="user-badge">
+                <span id="studentUserEmail">Student Portal</span>
+            </div>
+            <button class="btn danger small-button" onclick="logout()">
+                Logout
             </button>
+        </div>
+    </nav>
 
+    <!-- DASHBOARD CONTAINER -->
+    <main class="dashboard-container">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Student Ride Dashboard</h1>
+                <p style="color: var(--text-muted);">Book campus rides, track driver live location, and manage history.</p>
+            </div>
+            <div id="loginStatus" class="user-badge" style="background: rgba(59, 130, 246, 0.1); border-color: var(--border-highlight);">
+                Status: Authenticated
+            </div>
+        </div>
+
+        <!-- CURRENT / ACTIVE RIDE CARD -->
+        <section class="dashboard-card" id="activeRideSection">
+            <div class="section-header">
+                <h2>Active Ride & Live Tracking</h2>
+                <button id="refreshCurrentBtn" class="btn secondary small-button">
+                    Refresh Status
+                </button>
+            </div>
+
+            <div id="currentRide">
+                <div class="empty-state">
+                    <h3>No Active Ride</h3>
+                    <p>Select your pickup and drop locations below to book a ride.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- BOOK A RIDE SECTION -->
+        <section class="dashboard-card">
+            <div class="section-header">
+                <h2>Book a Campus Ride</h2>
+                <span class="subtitle">Click map, use GPS, or choose campus shortcuts to auto-fill locations</span>
+            </div>
+
+            <!-- Campus Preset Shortcuts -->
+            <div class="preset-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <label style="margin:0;">Quick Campus Shortcuts</label>
+                    <button id="useGpsBtn" type="button" class="btn secondary small-button" style="background:rgba(59,130,246,0.15); border-color:var(--accent-primary); color:var(--accent-primary);">
+                        Use My Current GPS
+                    </button>
+                </div>
+                <div class="location-presets" id="campusPresets">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <div class="input-row" style="grid-template-columns: 1fr 1.2fr; align-items: start; margin-top: 15px;">
+                <!-- Booking Form -->
+                <form id="rideForm" style="height: 100%;">
+                    <div class="form-group">
+                        <label for="pickup_loc">Pickup Location</label>
+                        <input type="text" id="pickup_loc" placeholder="e.g. Main Gate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="drop_loc">Drop Location</label>
+                        <input type="text" id="drop_loc" placeholder="e.g. Central Library" required>
+                    </div>
+
+                    <!-- Hidden Coordinate inputs auto-updated by map/preset -->
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label for="pickup_lat">Pickup Lat</label>
+                            <input type="number" step="any" id="pickup_lat" value="17.5454" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pickup_lng">Pickup Lng</label>
+                            <input type="number" step="any" id="pickup_lng" value="78.5718" required>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label for="drop_lat">Drop Lat</label>
+                            <input type="number" step="any" id="drop_lat" value="17.5470" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="drop_lng">Drop Lng</label>
+                            <input type="number" step="any" id="drop_lng" value="78.5730" required>
+                        </div>
+                    </div>
+
+                    <!-- Fare & Distance Estimate Box -->
+                    <div class="map-overlay-info" style="position: static; margin-top: 10px;">
+                        <div>Est. Distance: <strong id="estDistance">0.2 km</strong></div>
+                        <div>Est. Fare: <strong id="estFare" style="color: var(--accent-success);">₹33</strong></div>
+                    </div>
+
+                    <button type="submit" class="btn success" style="width: 100%; margin-top: 12px; font-size: 16px;">
+                        Request Campus Ride
+                    </button>
+                    <p id="rideMessage" style="text-align: center; font-weight: 600; font-size: 14px; margin-top: 8px;"></p>
+                </form>
+
+                <!-- Interactive Leaflet Map -->
+                <div>
+                    <label style="margin-bottom: 6px; display: block;">Interactive Location Selector Map</label>
+                    <div class="map-wrapper">
+                        <div id="bookingMap" style="width: 100%; height: 380px; background: #0f172a; border-radius: var(--radius-sm);"></div>
+                        <div class="map-overlay-info">
+                            <span>Click map to set: <strong id="mapModeIndicator">Pickup Pin</strong></span>
+                            <button id="toggleMapModeBtn" class="btn secondary small-button" type="button">Switch to Drop Pin</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIDE HISTORY -->
+        <section class="dashboard-card">
+            <div class="section-header">
+                <h2>My Ride History</h2>
+                <button id="refreshHistoryBtn" class="btn secondary small-button">
+                    Refresh History
+                </button>
+            </div>
+
+            <div class="filter-row">
+                <select id="historyStatus">
+                    <option value="">All Ride Statuses</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="ACCEPTED">Accepted</option>
+                    <option value="STARTED">En Route</option>
+                </select>
+
+                <input type="text" id="historyPickup" placeholder="Search by pickup location...">
+
+                <button id="searchHistoryBtn" class="btn secondary">
+                    Search
+                </button>
+            </div>
+
+            <div id="rideHistory">
+                <div class="empty-state">
+                    <p>Loading ride history...</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- RATING MODAL DIALOG -->
+    <dialog id="ratingModal" style="background: var(--bg-secondary); border: 1px solid var(--border-highlight); border-radius: var(--radius-lg); padding: 30px; color: var(--text-main); max-width: 440px; margin: auto; box-shadow: var(--shadow-card);">
+        <h3 style="margin-bottom: 10px;">Rate Your Driver</h3>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">Rate your experience for Ride #<span id="modalRideId"></span></p>
+
+        <form id="modalRatingForm">
+            <input type="hidden" id="modalRatingRideId">
+            <div class="form-group" style="text-align: center;">
+                <label>Rating</label>
+                <div class="star-rating" id="modalStarWidget">
+                    <span data-val="1">★</span>
+                    <span data-val="2">★</span>
+                    <span data-val="3">★</span>
+                    <span data-val="4">★</span>
+                    <span data-val="5" class="active">★</span>
+                </div>
+                <input type="hidden" id="modalRatingValue" value="5">
+            </div>
+
+            <div class="form-group">
+                <label for="modalRatingComment">Comments (Optional)</label>
+                <textarea id="modalRatingComment" placeholder="Great ride, prompt pickup!"></textarea>
+            </div>
+
+            <div class="button-row" style="margin-top: 15px;">
+                <button type="button" class="btn secondary" onclick="document.getElementById('ratingModal').close()">Cancel</button>
+                <button type="submit" class="btn success">Submit Rating</button>
+            </div>
         </form>
+    </dialog>
 
-        <p id="rideMessage"></p>
-
-        <div id="rideResult"></div>
-
-    </div>
-
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
     <script src="js/student.js"></script>
 
 </body>
+
 </html>
