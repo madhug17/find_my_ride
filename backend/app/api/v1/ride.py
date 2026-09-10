@@ -14,7 +14,7 @@ from app.db.models.rating import Rating
 from app.schemas.chat import ChatMessageCreate
 router = APIRouter(
     prefix='/rides',
-    tags=['RIde']
+    tags=['Ride']
 )
 
 @router.post('/',status_code=201)
@@ -38,7 +38,7 @@ def create_new_ride(
         raise HTTPException(
             status_code=400,detail=str(e)
         )
-@router.get('/my-rices')
+@router.get('/my-rides')
 def get_my_rides(
     db: Session = Depends(get_db),
     current_student : Student = Depends(get_current_student),
@@ -63,7 +63,7 @@ def get_driver_location(
         raise HTTPException(status_code=404,detail="Ride not found")
     if ride.driver_id is None:
         raise HTTPException(
-            status_code=400,detail="No driver has jaccepted this ride"
+            status_code=400,detail="No driver has accepted this ride"
         )
     driver = ride.driver
     if driver is None:
@@ -252,13 +252,6 @@ def get_ride_status(
 
     return response
 
-@router.get('/history')
-def ride_history(
-    db:Session=Depends(get_db),
-    current_student:Student=Depends(get_current_student)
-):
-    rides = db.query(Ride).filter(Ride.student_id==current_student.id).order_by(Ride.created_at.desc()).all()
-    return rides
 
 @router.put("/{ride_id}/cancel")
 async def cancel_ride(
