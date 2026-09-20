@@ -11,11 +11,22 @@
 
 <body>
 
-    <!-- NAVBAR -->
+    <!-- NAVBAR WITH ANIMATED HOVER TABS -->
     <nav class="navbar">
-        <a href="index.html" class="logo">
+        <a href="driver.html" class="logo">
             Find My Ride Driver
         </a>
+
+        <!-- Animated Tabs Hover Head Bar (Home, About, Services, Contact) -->
+        <div class="animated-tabs-hover-wrapper">
+            <div class="animated-tabs-container" id="driverNavTabs" aria-label="Driver Navigation">
+                <button type="button" data-id="Home" class="nav-tab-btn active">Home</button>
+                <button type="button" data-id="About" class="nav-tab-btn">About</button>
+                <button type="button" data-id="Services" class="nav-tab-btn">Services</button>
+                <button type="button" data-id="Contact" class="nav-tab-btn">Contact</button>
+            </div>
+        </div>
+
         <div class="nav-actions">
             <div class="user-badge">
                 <span id="driverHeaderName">Driver Portal</span>
@@ -29,130 +40,309 @@
     <!-- DASHBOARD CONTAINER -->
     <main class="dashboard-container">
 
-        <div class="dashboard-header">
-            <div>
-                <h1>Driver Control Center</h1>
-                <p style="color: var(--text-muted);">Manage availability, accept ride requests, and navigate campus live.</p>
-            </div>
+        <!-- ==============================================
+             1. HOME TAB PANE (DRIVER CONTROL CENTER)
+             ============================================== -->
+        <div id="driver-tab-home" class="driver-tab-pane active">
 
-            <!-- Availability Toggle Switch -->
-            <div class="dashboard-card" style="margin-bottom: 0; padding: 14px 24px;">
-                <label class="switch-label">
-                    <span>Driver Online Status:</span>
-                    <label class="switch">
-                        <input type="checkbox" id="availabilityToggle">
-                        <span class="slider"></span>
+            <div class="dashboard-header">
+                <div>
+                    <h1>Driver Control Center</h1>
+                    <p style="color: var(--text-muted);">Manage availability, accept ride requests, and navigate campus live.</p>
+                </div>
+
+                <!-- Availability Toggle Switch -->
+                <div class="dashboard-card" style="margin-bottom: 0; padding: 14px 24px;">
+                    <label class="switch-label">
+                        <span>Driver Online Status:</span>
+                        <label class="switch">
+                            <input type="checkbox" id="availabilityToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <strong id="availabilityText" style="color: #ef4444;">Offline</strong>
                     </label>
-                    <strong id="availabilityText" style="color: #ef4444;">Offline</strong>
-                </label>
+                </div>
             </div>
-        </div>
 
-        <div class="input-row" style="grid-template-columns: 1fr 1fr; gap: 25px;">
+            <div class="input-row" style="grid-template-columns: 1fr 1fr; gap: 25px;">
 
-            <!-- DRIVER PROFILE CARD -->
-            <section class="dashboard-card" style="margin-bottom: 0;">
+                <!-- DRIVER PROFILE CARD -->
+                <section class="dashboard-card" style="margin-bottom: 0;">
+                    <div class="section-header">
+                        <h2>Driver Profile</h2>
+                        <span class="status-badge badge-accepted">Verified Driver</span>
+                    </div>
+
+                    <div class="profile-grid">
+                        <div class="profile-stat">
+                            <strong>Driver Name</strong>
+                            <p id="driverName">Loading...</p>
+                        </div>
+                        <div class="profile-stat">
+                            <strong>Email Address</strong>
+                            <p id="driverEmail">Loading...</p>
+                        </div>
+                        <div class="profile-stat">
+                            <strong>Phone</strong>
+                            <p id="driverPhone">Loading...</p>
+                        </div>
+                        <div class="profile-stat">
+                            <strong>Vehicle Info</strong>
+                            <p id="driverVehicle">Loading...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CURRENT ACTIVE RIDE CARD -->
+                <section class="dashboard-card" style="margin-bottom: 0;">
+                    <div class="section-header">
+                        <h2>Current Active Trip</h2>
+                        <button id="refreshCurrentRideBtn" class="btn secondary small-button">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div id="driverCurrentRide">
+                        <div class="empty-state">
+                            <h3>No Active Trip</h3>
+                            <p>Set status to <strong>Online</strong> and accept a ride request below.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- DRIVER MAP & NAVIGATION -->
+            <section class="dashboard-card" style="margin-top: 25px;">
                 <div class="section-header">
-                    <h2>Driver Profile</h2>
-                    <span class="status-badge badge-accepted">Verified Driver</span>
+                    <h2>Live Campus Driver Map</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span style="font-size: 13px; color: var(--text-muted);">Current Coords: <strong id="driverCoordText">17.5454, 78.5718</strong></span>
+                        <button id="useGpsBtnDriver" class="btn secondary small-button" style="background: rgba(0, 200, 83, 0.1); border-color: var(--accent-primary); color: var(--text-main);">Use GPS Position</button>
+                        <button id="updateLocationBtn" class="btn secondary small-button">Set Location Here</button>
+                    </div>
                 </div>
 
-                <div class="profile-grid">
-                    <div class="profile-stat">
-                        <strong>Driver Name</strong>
-                        <p id="driverName">Loading...</p>
-                    </div>
-                    <div class="profile-stat">
-                        <strong>Email Address</strong>
-                        <p id="driverEmail">Loading...</p>
-                    </div>
-                    <div class="profile-stat">
-                        <strong>Phone</strong>
-                        <p id="driverPhone">Loading...</p>
-                    </div>
-                    <div class="profile-stat">
-                        <strong>Vehicle Info</strong>
-                        <p id="driverVehicle">Loading...</p>
+                <div class="map-wrapper">
+                    <div id="driverMap" style="width: 100%; height: 360px; background: var(--bg-secondary);"></div>
+                    <div class="map-overlay-info">
+                        <span>Click anywhere on map to update your live location or click Use GPS Position.</span>
                     </div>
                 </div>
             </section>
 
-            <!-- CURRENT ACTIVE RIDE CARD -->
-            <section class="dashboard-card" style="margin-bottom: 0;">
+            <!-- AVAILABLE RIDE REQUESTS & NEARBY SEARCH -->
+            <section class="dashboard-card">
                 <div class="section-header">
-                    <h2>Current Active Trip</h2>
-                    <button id="refreshCurrentRideBtn" class="btn secondary small-button">
-                        Refresh
-                    </button>
+                    <h2>Ride Requests & Nearby Rides</h2>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <label style="margin: 0; font-size: 13px;">Radius:</label>
+                        <input type="number" id="radiusKm" value="5" min="1" max="50" style="width: 80px; padding: 6px 10px;">
+                        <span style="font-size: 13px; color: var(--text-muted);">km</span>
+                        <button id="findNearbyBtn" class="btn secondary small-button">Search Nearby</button>
+                        <button id="refreshAvailableBtn" class="btn secondary small-button">Refresh All</button>
+                    </div>
                 </div>
 
-                <div id="driverCurrentRide">
+                <div id="availableRides">
                     <div class="empty-state">
-                        <h3>No Active Trip</h3>
-                        <p>Set status to <strong>Online</strong> and accept a ride request below.</p>
+                        <p>Loading available rides...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PREVIOUS RIDES HISTORY -->
+            <section class="dashboard-card">
+                <div class="section-header">
+                    <h2>Driver History</h2>
+                </div>
+                <div id="driverHistory">
+                    <div class="empty-state">
+                        <p>Loading trip history...</p>
                     </div>
                 </div>
             </section>
 
         </div>
 
-        <!-- DRIVER MAP & NAVIGATION -->
-        <section class="dashboard-card" style="margin-top: 25px;">
-            <div class="section-header">
-                <h2>Live Campus Driver Map</h2>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <span style="font-size: 13px; color: var(--text-muted);">Current Coords: <strong id="driverCoordText">17.5454, 78.5718</strong></span>
-                    <button id="useGpsBtnDriver" class="btn secondary small-button" style="background:rgba(59,130,246,0.15); border-color:var(--accent-primary); color:var(--accent-primary);">Use GPS Position</button>
-                    <button id="updateLocationBtn" class="btn secondary small-button">Set Location Here</button>
-                </div>
+        <!-- ==============================================
+             2. ABOUT TAB PANE (DRIVER STANDARDS)
+             ============================================== -->
+        <div id="driver-tab-about" class="driver-tab-pane">
+            <div class="page-section-header" style="margin-top: 10px;">
+                <span class="section-tag">Driver Standards</span>
+                <h2>Safe & Compliant Campus Driving</h2>
+                <p>Learn more about campus speed limits, passenger safety policies, and vehicle inspection standards.</p>
             </div>
 
-            <div class="map-wrapper">
-                <div id="driverMap" style="width: 100%; height: 360px; background: #0f172a;"></div>
-                <div class="map-overlay-info">
-                    <span>Click anywhere on map to update your live location or click Use GPS Position.</span>
+            <div class="cards-feature-grid">
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">⚡</div>
+                    <span class="card-badge">Campus Zone</span>
+                    <h3>Speed Limit (20 km/h)</h3>
+                    <p>All buggies and registered vehicles must adhere strictly to the 20 km/h campus speed limit around hostel walkways and academic promenades.</p>
                 </div>
-            </div>
-        </section>
 
-        <!-- AVAILABLE RIDE REQUESTS & NEARBY SEARCH -->
-        <section class="dashboard-card">
-            <div class="section-header">
-                <h2>Ride Requests & Nearby Rides</h2>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <label style="margin: 0; font-size: 13px;">Radius:</label>
-                    <input type="number" id="radiusKm" value="5" min="1" max="50" style="width: 80px; padding: 6px 10px;">
-                    <span style="font-size: 13px; color: var(--text-muted);">km</span>
-                    <button id="findNearbyBtn" class="btn secondary small-button">Search Nearby</button>
-                    <button id="refreshAvailableBtn" class="btn secondary small-button">Refresh All</button>
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">🛡️</div>
+                    <span class="card-badge">Verification</span>
+                    <h3>Driver Identification</h3>
+                    <p>Always keep your verified institutional identity badge and vehicle QR code displayed prominently for passenger verification.</p>
                 </div>
+
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">🌙</div>
+                    <span class="card-badge">Night Protocol</span>
+                    <h3>Late Night Escort Duties</h3>
+                    <p>Drivers active after 10 PM are assigned priority routes between Central Library and Hostels to ensure student safety.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================================
+             3. SERVICES TAB PANE (TRANSIT FLEET)
+             ============================================== -->
+        <div id="driver-tab-services" class="driver-tab-pane">
+            <div class="page-section-header" style="margin-top: 10px;">
+                <span class="section-tag">Transit Network</span>
+                <h2>Campus Fleet Services</h2>
+                <p>Overview of campus mobility channels and driver partner support.</p>
             </div>
 
-            <div id="availableRides">
-                <div class="empty-state">
-                    <p>Loading available rides...</p>
+            <div class="cards-feature-grid">
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">🚗</div>
+                    <span class="card-badge">Daily Routes</span>
+                    <h3>Hostel & Academic Loops</h3>
+                    <p>Continuous circulation routes designed to minimize student wait times between hostel blocks and morning lectures.</p>
+                    <button type="button" class="btn secondary small-button" style="margin-top: auto;" onclick="switchDriverTab('Home')">View Active Requests →</button>
                 </div>
-            </div>
-        </section>
 
-        <!-- PREVIOUS RIDES HISTORY -->
-        <section class="dashboard-card">
-            <div class="section-header">
-                <h2>Driver History</h2>
-            </div>
-            <div id="driverHistory">
-                <div class="empty-state">
-                    <p>Loading trip history...</p>
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">🌙</div>
+                    <span class="card-badge">Special Duty</span>
+                    <h3>Night Owl Escort</h3>
+                    <p>Direct door-to-door transit for late study groups, library departures, and lab researchers.</p>
+                    <button type="button" class="btn secondary small-button" style="margin-top: auto;" onclick="switchDriverTab('Home')">Go Online →</button>
+                </div>
+
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">💼</div>
+                    <span class="card-badge">Rewards</span>
+                    <h3>Driver Incentives</h3>
+                    <p>High rating bonuses, fuel allowances, and recognition for top-rated safe campus drivers each semester.</p>
                 </div>
             </div>
-        </section>
+        </div>
+
+        <!-- ==============================================
+             4. CONTACT TAB PANE (DISPATCH DESK)
+             ============================================== -->
+        <div id="driver-tab-contact" class="driver-tab-pane">
+            <div class="page-section-header" style="margin-top: 10px;">
+                <span class="section-tag">Transport Dispatch</span>
+                <h2>Driver Support Desk</h2>
+                <p>Reach out to campus transit management, report vehicle maintenance, or resolve trip issues.</p>
+            </div>
+
+            <div class="contact-layout-grid">
+                <div class="contact-info-list">
+                    <div class="contact-info-card">
+                        <div class="contact-icon-box">🏢</div>
+                        <div class="contact-info-text">
+                            <h4>Central Dispatch Office</h4>
+                            <p>Admin Block, Ground Floor, Mobility Dispatch Hub.<br>Hours: 7:00 AM – 11:30 PM.</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-info-card">
+                        <div class="contact-icon-box">🚨</div>
+                        <div class="contact-info-text">
+                            <h4>Security & Emergency Radio</h4>
+                            <p>Emergency assistance: <a href="tel:+914040404040">+91 40-WOXSEN-RIDE</a> (Ext. <strong>4040</strong>).</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-info-card">
+                        <div class="contact-icon-box">✉️</div>
+                        <div class="contact-info-text">
+                            <h4>Fleet Maintenance Support</h4>
+                            <p>Vehicle reports and battery charging assistance: <a href="mailto:driver-support@woxsen.edu.in">driver-support@woxsen.edu.in</a></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Form -->
+                <div class="feature-glass-card" style="margin: 0;">
+                    <h3>Report an Issue / Note</h3>
+                    <p>Send a message directly to the transport dispatch controller.</p>
+                    <form onsubmit="handleDriverContactSubmit(event)">
+                        <div class="form-group-uber" style="margin-bottom: 12px;">
+                            <label style="font-size: 12px;">Driver Name / ID</label>
+                            <input type="text" class="input-uber" placeholder="e.g. John Doe (ID 402)" required id="driverContactName">
+                        </div>
+                        <div class="form-group-uber" style="margin-bottom: 16px;">
+                            <label style="font-size: 12px;">Message</label>
+                            <textarea class="input-uber" rows="3" placeholder="Describe the vehicle issue or note..." required id="driverContactMsg" style="resize: vertical;"></textarea>
+                        </div>
+                        <button type="submit" class="btn-rapido">
+                            <span>Submit to Dispatch</span>
+                            <span>→</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
 
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/config.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/animated-background.js"></script>
     <script src="js/driver.js"></script>
+
+    <script>
+        let driverNavAnimatedBg = null;
+
+        function switchDriverTab(tabId) {
+            document.querySelectorAll('.driver-tab-pane').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById('driver-tab-' + tabId.toLowerCase());
+            if (target) {
+                target.classList.add('active');
+            }
+            if (driverNavAnimatedBg && driverNavAnimatedBg.activeId !== tabId) {
+                driverNavAnimatedBg.setActive(tabId);
+            }
+            if (tabId === 'Home') {
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, 150);
+            }
+        }
+
+        function handleDriverContactSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('driverContactName')?.value;
+            toast(`Note submitted to Fleet Dispatch for ${name || 'Driver'}.`, 'success');
+            e.target.reset();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            driverNavAnimatedBg = new AnimatedBackground('#driverNavTabs', {
+                defaultValue: 'Home',
+                className: 'animated-bg-pill',
+                enableHover: true,
+                transition: {
+                    duration: 0.3,
+                    bounce: 0.2
+                },
+                onValueChange: (tabId) => {
+                    switchDriverTab(tabId);
+                }
+            });
+        });
+    </script>
 
 </body>
 

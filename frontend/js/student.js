@@ -2,21 +2,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const token = localStorage.getItem("access_token");
     const role = localStorage.getItem("user_role");
-    if (!token || role !== "student") {
-        window.location.href = "login.html";
-        return;
-    }
+    const isAuthenticated = !!(token && role === "student");
 
-    const authHeaders = {
+    const authHeaders = isAuthenticated ? {
         "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+    } : {
         "Content-Type": "application/json"
     };
 
-    // Update student email header
+    // Update student email header or show Guest/Explore mode
     const userEmail = localStorage.getItem("user_email");
-    if (userEmail) {
-        const studentUserEmailEl = document.getElementById("studentUserEmail");
-        if (studentUserEmailEl) studentUserEmailEl.textContent = userEmail;
+    const studentUserEmailEl = document.getElementById("studentUserEmail");
+    if (studentUserEmailEl) {
+        studentUserEmailEl.textContent = isAuthenticated ? (userEmail || "Student Portal") : "Explore Map (Guest)";
+    }
+
+    // If guest, adjust navigation button
+    const logoutBtn = document.querySelector(".nav-actions button.danger");
+    if (logoutBtn && !isAuthenticated) {
+        logoutBtn.textContent = "Login";
+        logoutBtn.className = "btn success small-button";
+        logoutBtn.onclick = () => { window.location.href = "login.html"; };
     }
 
     // Dynamic Map State

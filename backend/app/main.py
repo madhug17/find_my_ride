@@ -13,15 +13,21 @@ import app.db.base
 
 from app.db.models.student import Student
 from app.db.models.driver import Driver
+from app.db.models.ride import Ride
 from app.db.models.rating import Rating
 from app.db.models.chat import RideChatMessage
 
+# Ensure all database tables exist immediately
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Find My Ride",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
 
 # Enable CORS for all origins (file://, localhost, live-server)
 app.add_middleware(

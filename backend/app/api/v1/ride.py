@@ -55,10 +55,8 @@ def get_my_rides(
 def get_driver_location(
     ride_id:int,
     db:Session =Depends(get_db),
-    current_student: Student=Depends(get_current_student)
-
 ):
-    ride = db.query(Ride).filter(Ride.id==ride_id,Ride.student_id==current_student.id).first()
+    ride = db.query(Ride).filter(Ride.id==ride_id).first()
     if ride is None:
         raise HTTPException(status_code=404,detail="Ride not found")
     if ride.driver_id is None:

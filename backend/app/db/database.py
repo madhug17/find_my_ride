@@ -16,7 +16,9 @@ try:
 except Exception as e:
     print(f"Could not connect to {DATABASE_URL}: {e}")
     print("Falling back to local SQLite database (find_my_ride.db)")
-    DATABASE_URL = "sqlite:///./find_my_ride.db"
+    import os
+    db_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../find_my_ride.db"))
+    DATABASE_URL = f"sqlite:///{db_file}"
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
 SessionLocal = sessionmaker(

@@ -11,11 +11,22 @@
 
 <body>
 
-    <!-- NAVBAR -->
+    <!-- NAVBAR WITH ANIMATED HOVER TABS -->
     <nav class="navbar">
-        <a href="index.html" class="logo">
+        <a href="student.html" class="logo">
             Find My Ride
         </a>
+
+        <!-- Animated Tabs Hover Head Bar (Home, About, Services, Contact) -->
+        <div class="animated-tabs-hover-wrapper">
+            <div class="animated-tabs-container" id="studentNavTabs" aria-label="Student Navigation">
+                <button type="button" data-id="Home" class="nav-tab-btn active">Home</button>
+                <button type="button" data-id="About" class="nav-tab-btn">About</button>
+                <button type="button" data-id="Services" class="nav-tab-btn">Services</button>
+                <button type="button" data-id="Contact" class="nav-tab-btn">Contact</button>
+            </div>
+        </div>
+
         <div class="nav-actions">
             <div class="user-badge">
                 <span id="studentUserEmail">Student Portal</span>
@@ -29,147 +40,296 @@
     <!-- DASHBOARD CONTAINER -->
     <main class="dashboard-container">
 
-        <div class="dashboard-header">
-            <div>
-                <h1>Student Ride Dashboard</h1>
-                <p style="color: var(--text-muted);">Book campus rides, track driver live location, and manage history.</p>
+        <!-- ==============================================
+             1. HOME TAB PANE (RIDE DASHBOARD)
+             ============================================== -->
+        <div id="student-tab-home" class="student-tab-pane active">
+
+            <div class="dashboard-header">
+                <div>
+                    <h1>Student Ride Dashboard</h1>
+                    <p style="color: var(--text-muted);">Book campus rides, track driver live location, and manage history.</p>
+                </div>
+                <div id="loginStatus" class="user-badge" style="background: rgba(0, 200, 83, 0.08); border-color: var(--border-highlight); color: var(--text-main);">
+                    Status: Authenticated
+                </div>
             </div>
-            <div id="loginStatus" class="user-badge" style="background: rgba(59, 130, 246, 0.1); border-color: var(--border-highlight);">
-                Status: Authenticated
+
+            <!-- CURRENT / ACTIVE RIDE CARD -->
+            <section class="dashboard-card" id="activeRideSection">
+                <div class="section-header">
+                    <h2>Active Ride & Live Tracking</h2>
+                    <button id="refreshCurrentBtn" class="btn secondary small-button">
+                        Refresh Status
+                    </button>
+                </div>
+
+                <div id="currentRide">
+                    <div class="empty-state">
+                        <h3>No Active Ride</h3>
+                        <p>Select your pickup and drop locations below to book a ride.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BOOK A RIDE SECTION -->
+            <section class="dashboard-card">
+                <div class="section-header">
+                    <h2>Book a Campus Ride</h2>
+                    <span class="subtitle">Click map, use GPS, or choose campus shortcuts to auto-fill locations</span>
+                </div>
+
+                <!-- Campus Preset Shortcuts -->
+                <div class="preset-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <label style="margin:0;">Quick Campus Shortcuts</label>
+                        <button id="useGpsBtn" type="button" class="btn secondary small-button" style="background: rgba(0, 200, 83, 0.1); border-color: var(--accent-primary); color: var(--text-main);">
+                            Use My Current GPS
+                        </button>
+                    </div>
+                    <div class="location-presets" id="campusPresets">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <div class="input-row" style="grid-template-columns: 1fr 1.2fr; align-items: start; margin-top: 15px;">
+                    <!-- Booking Form -->
+                    <form id="rideForm" style="height: 100%;">
+                        <div class="form-group">
+                            <label for="pickup_loc">Pickup Location</label>
+                            <input type="text" id="pickup_loc" placeholder="e.g. Main Gate" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="drop_loc">Drop Location</label>
+                            <input type="text" id="drop_loc" placeholder="e.g. Central Library" required>
+                        </div>
+
+                        <!-- Hidden Coordinate inputs auto-updated by map/preset -->
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label for="pickup_lat">Pickup Lat</label>
+                                <input type="number" step="any" id="pickup_lat" value="17.5454" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="pickup_lng">Pickup Lng</label>
+                                <input type="number" step="any" id="pickup_lng" value="78.5718" required>
+                            </div>
+                        </div>
+
+                        <div class="input-row">
+                            <div class="form-group">
+                                <label for="drop_lat">Drop Lat</label>
+                                <input type="number" step="any" id="drop_lat" value="17.5470" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="drop_lng">Drop Lng</label>
+                                <input type="number" step="any" id="drop_lng" value="78.5730" required>
+                            </div>
+                        </div>
+
+                        <!-- Fare & Distance Estimate Box -->
+                        <div class="map-overlay-info" style="position: static; margin-top: 10px;">
+                            <div>Est. Distance: <strong id="estDistance">0.2 km</strong></div>
+                            <div>Est. Fare: <strong id="estFare" style="color: var(--accent-primary);">₹33</strong></div>
+                        </div>
+
+                        <button type="submit" class="btn success" style="width: 100%; margin-top: 12px; font-size: 16px;">
+                            Request Campus Ride
+                        </button>
+                        <p id="rideMessage" style="text-align: center; font-weight: 600; font-size: 14px; margin-top: 8px;"></p>
+                    </form>
+
+                    <!-- Interactive Leaflet Map -->
+                    <div>
+                        <label style="margin-bottom: 6px; display: block;">Interactive Location Selector Map</label>
+                        <div class="map-wrapper">
+                            <div id="bookingMap" style="width: 100%; height: 380px; background: var(--bg-secondary); border-radius: var(--radius-sm);"></div>
+                            <div class="map-overlay-info">
+                                <span>Click map to set: <strong id="mapModeIndicator">Pickup Pin</strong></span>
+                                <button id="toggleMapModeBtn" class="btn secondary small-button" type="button">Switch to Drop Pin</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIDE HISTORY -->
+            <section class="dashboard-card">
+                <div class="section-header">
+                    <h2>My Ride History</h2>
+                    <button id="refreshHistoryBtn" class="btn secondary small-button">
+                        Refresh History
+                    </button>
+                </div>
+
+                <div class="filter-row">
+                    <select id="historyStatus">
+                        <option value="">All Ride Statuses</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="ACCEPTED">Accepted</option>
+                        <option value="STARTED">En Route</option>
+                    </select>
+
+                    <input type="text" id="historyPickup" placeholder="Search by pickup location...">
+
+                    <button id="searchHistoryBtn" class="btn secondary">
+                        Search
+                    </button>
+                </div>
+
+                <div id="rideHistory">
+                    <div class="empty-state">
+                        <p>Loading ride history...</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ==============================================
+             2. ABOUT TAB PANE
+             ============================================== -->
+        <div id="student-tab-about" class="student-tab-pane">
+            <div class="page-section-header" style="margin-top: 10px;">
+                <span class="section-tag">About Find My Ride</span>
+                <h2>Empowering Safe & Smart Campus Transit</h2>
+                <p>Designed specifically for university campuses to eliminate late-night transit friction and build a seamless, student-friendly mobility network.</p>
+            </div>
+
+            <div class="cards-feature-grid">
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">🛡️</div>
+                    <span class="card-badge">Campus Security</span>
+                    <h3>100% University Verified</h3>
+                    <p>Every student and driver is validated through institutional university credentials. External unverified parties are strictly prohibited from booking or accepting rides.</p>
+                </div>
+
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">🌙</div>
+                    <span class="card-badge">24/7 Safety</span>
+                    <h3>Night-Owl Safe Escort</h3>
+                    <p>Studying late at the Central Library, Computer Labs, or Innovation Hub? Request safe escort shuttles direct to your campus residence doorstep.</p>
+                </div>
+
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">📍</div>
+                    <span class="card-badge">Real-Time Telemetry</span>
+                    <h3>Live Leaflet Geo-Tracking</h3>
+                    <p>Live driver telemetry streamed directly to your screen eliminates guesswork. Monitor real-time approach angles, live distances, and ETA markers.</p>
+                </div>
             </div>
         </div>
 
-        <!-- CURRENT / ACTIVE RIDE CARD -->
-        <section class="dashboard-card" id="activeRideSection">
-            <div class="section-header">
-                <h2>Active Ride & Live Tracking</h2>
-                <button id="refreshCurrentBtn" class="btn secondary small-button">
-                    Refresh Status
-                </button>
+        <!-- ==============================================
+             3. SERVICES TAB PANE
+             ============================================== -->
+        <div id="student-tab-services" class="student-tab-pane">
+            <div class="page-section-header" style="margin-top: 10px;">
+                <span class="section-tag">Our Mobility Services</span>
+                <h2>Campus Rides For Every Need</h2>
+                <p>From an express hop to morning lectures to weekend carpooling to metro and railway stations, choose the service that fits your schedule.</p>
             </div>
 
-            <div id="currentRide">
-                <div class="empty-state">
-                    <h3>No Active Ride</h3>
-                    <p>Select your pickup and drop locations below to book a ride.</p>
+            <div class="cards-feature-grid">
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">⚡</div>
+                    <span class="card-badge">Express Hop</span>
+                    <h3>Instant Campus Hop</h3>
+                    <p>Continuous electric buggy and bike shuttles connecting Hostels, Academic Blocks, Cafeteria Hub, and Sports Complex.</p>
+                    <button type="button" class="btn secondary small-button" style="margin-top: auto;" onclick="switchStudentTab('Home')">Book Instant Hop →</button>
+                </div>
+
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">🌙</div>
+                    <span class="card-badge">Night Safe</span>
+                    <h3>Night Owl Escort</h3>
+                    <p>Dedicated safe transport for late study groups, lab shifts, and library visitors between 10:00 PM and 5:00 AM with security coordination.</p>
+                    <button type="button" class="btn secondary small-button" style="margin-top: auto;" onclick="switchStudentTab('Home')">Request Night Ride →</button>
+                </div>
+
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">🚗</div>
+                    <span class="card-badge">Peer Pool</span>
+                    <h3>Peer Ride-Share & Carpool</h3>
+                    <p>Heading to the airport, railway station, or city malls on weekends? Share rides and split fares easily with fellow verified campus peers.</p>
+                    <button type="button" class="btn secondary small-button" style="margin-top: auto;" onclick="switchStudentTab('Home')">Schedule Pool →</button>
+                </div>
+
+                <div class="feature-glass-card">
+                    <div class="feature-card-icon">💼</div>
+                    <span class="card-badge">Drivers</span>
+                    <h3>Campus Driver Network</h3>
+                    <p>Vetted campus drivers with live location beacons, verified background clearance, and student-first service protocols.</p>
+                    <button type="button" class="btn secondary small-button" style="margin-top: auto;" onclick="switchStudentTab('Home')">Find Driver →</button>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- BOOK A RIDE SECTION -->
-        <section class="dashboard-card">
-            <div class="section-header">
-                <h2>Book a Campus Ride</h2>
-                <span class="subtitle">Click map, use GPS, or choose campus shortcuts to auto-fill locations</span>
+        <!-- ==============================================
+             4. CONTACT TAB PANE
+             ============================================== -->
+        <div id="student-tab-contact" class="student-tab-pane">
+            <div class="page-section-header" style="margin-top: 10px;">
+                <span class="section-tag">Campus Support</span>
+                <h2>We're Here Around The Clock</h2>
+                <p>Have questions, lost property in a ride, or need emergency transport coordination? Contact our campus mobility desk.</p>
             </div>
 
-            <!-- Campus Preset Shortcuts -->
-            <div class="preset-section">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <label style="margin:0;">Quick Campus Shortcuts</label>
-                    <button id="useGpsBtn" type="button" class="btn secondary small-button" style="background:rgba(59,130,246,0.15); border-color:var(--accent-primary); color:var(--accent-primary);">
-                        Use My Current GPS
-                    </button>
-                </div>
-                <div class="location-presets" id="campusPresets">
-                    <!-- Populated dynamically via JS -->
-                </div>
-            </div>
-
-            <div class="input-row" style="grid-template-columns: 1fr 1.2fr; align-items: start; margin-top: 15px;">
-                <!-- Booking Form -->
-                <form id="rideForm" style="height: 100%;">
-                    <div class="form-group">
-                        <label for="pickup_loc">Pickup Location</label>
-                        <input type="text" id="pickup_loc" placeholder="e.g. Main Gate" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="drop_loc">Drop Location</label>
-                        <input type="text" id="drop_loc" placeholder="e.g. Central Library" required>
-                    </div>
-
-                    <!-- Hidden Coordinate inputs auto-updated by map/preset -->
-                    <div class="input-row">
-                        <div class="form-group">
-                            <label for="pickup_lat">Pickup Lat</label>
-                            <input type="number" step="any" id="pickup_lat" value="17.5454" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="pickup_lng">Pickup Lng</label>
-                            <input type="number" step="any" id="pickup_lng" value="78.5718" required>
-                        </div>
-                    </div>
-
-                    <div class="input-row">
-                        <div class="form-group">
-                            <label for="drop_lat">Drop Lat</label>
-                            <input type="number" step="any" id="drop_lat" value="17.5470" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="drop_lng">Drop Lng</label>
-                            <input type="number" step="any" id="drop_lng" value="78.5730" required>
+            <div class="contact-layout-grid">
+                <div class="contact-info-list">
+                    <div class="contact-info-card">
+                        <div class="contact-icon-box">🏢</div>
+                        <div class="contact-info-text">
+                            <h4>Campus Mobility Desk</h4>
+                            <p>Admin Block, Ground Floor, Gate 1 Transit Office.<br>Operating Hours: 7:30 AM – 11:30 PM daily.</p>
                         </div>
                     </div>
 
-                    <!-- Fare & Distance Estimate Box -->
-                    <div class="map-overlay-info" style="position: static; margin-top: 10px;">
-                        <div>Est. Distance: <strong id="estDistance">0.2 km</strong></div>
-                        <div>Est. Fare: <strong id="estFare" style="color: var(--accent-success);">₹33</strong></div>
+                    <div class="contact-info-card">
+                        <div class="contact-icon-box">🚨</div>
+                        <div class="contact-info-text">
+                            <h4>Emergency Campus Security Hotline</h4>
+                            <p>Call <a href="tel:+914040404040">+91 40-WOXSEN-RIDE</a> or Ext. <strong>4040</strong> from any campus intercom for immediate assistance.</p>
+                        </div>
                     </div>
 
-                    <button type="submit" class="btn success" style="width: 100%; margin-top: 12px; font-size: 16px;">
-                        Request Campus Ride
-                    </button>
-                    <p id="rideMessage" style="text-align: center; font-weight: 600; font-size: 14px; margin-top: 8px;"></p>
-                </form>
-
-                <!-- Interactive Leaflet Map -->
-                <div>
-                    <label style="margin-bottom: 6px; display: block;">Interactive Location Selector Map</label>
-                    <div class="map-wrapper">
-                        <div id="bookingMap" style="width: 100%; height: 380px; background: #0f172a; border-radius: var(--radius-sm);"></div>
-                        <div class="map-overlay-info">
-                            <span>Click map to set: <strong id="mapModeIndicator">Pickup Pin</strong></span>
-                            <button id="toggleMapModeBtn" class="btn secondary small-button" type="button">Switch to Drop Pin</button>
+                    <div class="contact-info-card">
+                        <div class="contact-icon-box">✉️</div>
+                        <div class="contact-info-text">
+                            <h4>Email & Lost-and-Found</h4>
+                            <p>General inquiries and lost items: <a href="mailto:ride-support@woxsen.edu.in">ride-support@woxsen.edu.in</a></p>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- RIDE HISTORY -->
-        <section class="dashboard-card">
-            <div class="section-header">
-                <h2>My Ride History</h2>
-                <button id="refreshHistoryBtn" class="btn secondary small-button">
-                    Refresh History
-                </button>
-            </div>
-
-            <div class="filter-row">
-                <select id="historyStatus">
-                    <option value="">All Ride Statuses</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="CANCELLED">Cancelled</option>
-                    <option value="PENDING">Pending</option>
-                    <option value="ACCEPTED">Accepted</option>
-                    <option value="STARTED">En Route</option>
-                </select>
-
-                <input type="text" id="historyPickup" placeholder="Search by pickup location...">
-
-                <button id="searchHistoryBtn" class="btn secondary">
-                    Search
-                </button>
-            </div>
-
-            <div id="rideHistory">
-                <div class="empty-state">
-                    <p>Loading ride history...</p>
+                <!-- Quick Inquiry Form -->
+                <div class="feature-glass-card" style="margin: 0;">
+                    <h3>Send a Note to Transport Desk</h3>
+                    <p>Share feedback, report an item, or suggest new pickup routes.</p>
+                    <form onsubmit="handleStudentContactSubmit(event)">
+                        <div class="form-group-uber" style="margin-bottom: 12px;">
+                            <label style="font-size: 12px;">Your Name / Roll No</label>
+                            <input type="text" class="input-uber" placeholder="e.g. Alex (2024-CS-042)" required id="studentContactName">
+                        </div>
+                        <div class="form-group-uber" style="margin-bottom: 12px;">
+                            <label style="font-size: 12px;">Campus Email</label>
+                            <input type="email" class="input-uber" placeholder="name@woxsen.edu.in" required id="studentContactEmail">
+                        </div>
+                        <div class="form-group-uber" style="margin-bottom: 16px;">
+                            <label style="font-size: 12px;">Message</label>
+                            <textarea class="input-uber" rows="3" placeholder="Describe your request or feedback..." required id="studentContactMsg" style="resize: vertical;"></textarea>
+                        </div>
+                        <button type="submit" class="btn-rapido">
+                            <span>Submit Note</span>
+                            <span>→</span>
+                        </button>
+                    </form>
                 </div>
             </div>
-        </section>
+        </div>
 
     </main>
 
@@ -207,7 +367,51 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/config.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/animated-background.js"></script>
     <script src="js/student.js"></script>
+
+    <script>
+        let studentNavAnimatedBg = null;
+
+        function switchStudentTab(tabId) {
+            document.querySelectorAll('.student-tab-pane').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById('student-tab-' + tabId.toLowerCase());
+            if (target) {
+                target.classList.add('active');
+            }
+            if (studentNavAnimatedBg && studentNavAnimatedBg.activeId !== tabId) {
+                studentNavAnimatedBg.setActive(tabId);
+            }
+            // Trigger leaflet map redraw when returning to Home
+            if (tabId === 'Home') {
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, 150);
+            }
+        }
+
+        function handleStudentContactSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('studentContactName')?.value;
+            toast(`Thank you ${name || ''}! Note submitted to Campus Transport Desk.`, 'success');
+            e.target.reset();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            studentNavAnimatedBg = new AnimatedBackground('#studentNavTabs', {
+                defaultValue: 'Home',
+                className: 'animated-bg-pill',
+                enableHover: true,
+                transition: {
+                    duration: 0.3,
+                    bounce: 0.2
+                },
+                onValueChange: (tabId) => {
+                    switchStudentTab(tabId);
+                }
+            });
+        });
+    </script>
 
 </body>
 
