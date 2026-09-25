@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find My Ride — Unified Campus Ride Portal</title>
+    <title>Find My Ride — Fast, Safe Campus Mobility</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -13,68 +13,130 @@
     <!-- High-Contrast Night City Vector Map Overlay -->
     <div class="city-map-overlay"></div>
 
-    <!-- BRAND LOGO HEADER -->
-    <header class="portal-brand-header">
-        <a href="index.html" class="brand-logo">
-            <span>Find My Ride</span>
+    <!-- BRAND LOGO HEADER (NO NAVBAR / NO TABS) -->
+    <header class="portal-brand-header" style="width: 100%; max-width: 1200px; padding: 28px 24px 8px; display: flex; align-items: center; justify-content: flex-start;">
+        <a href="index.html" class="brand-logo" style="display: inline-flex; align-items: center; gap: 10px; text-decoration: none;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: rgba(0, 200, 83, 0.12); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 8px; font-size: 16px;">⚡</span>
+            <span style="font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em;">Find My Ride</span>
         </a>
     </header>
 
-    <!-- UNIFIED LOGIN CARD -->
-    <main class="unified-auth-card">
+    <!-- MAIN INTERACTIVE CONTENT AREA: HERO CONTEXT BESIDE LOGIN CARD -->
+    <main class="landing-content-area" style="width: 100%; max-width: 1200px; padding: 16px 24px 60px;">
+        <div class="home-layout-grid">
+            
+            <!-- Left Column: Hero Context & Campus Metrics -->
+            <div class="home-hero-content">
+                <div class="hero-pill-badge">
+                    <span class="dot-live"></span>
+                    <span>Campus Transit Network • Live</span>
+                </div>
 
-        <!-- Segmented Role Controller (Student | Driver) -->
-        <div class="segmented-control-wrapper" id="segmentedTrack">
-            <div class="pill-highlight" id="pillHighlight"></div>
-            <button type="button" class="role-btn active" id="btnRoleStudent" onclick="switchPortalRole('student')">
-                Student
-            </button>
-            <button type="button" class="role-btn" id="btnRoleDriver" onclick="switchPortalRole('driver')">
-                Driver
-            </button>
-        </div>
+                <h1>
+                    Unified Campus Rides, <br>
+                    <span class="gradient-text">Zero Wait Time.</span>
+                </h1>
 
-        <!-- DYNAMIC CARD HEADER -->
-        <div class="portal-card-header">
-            <h1 id="portalTitle">Student Login</h1>
-            <p id="portalSubtitle">Book campus rides instantly & track live arrivals</p>
-        </div>
+                <p class="hero-subtitle">
+                    Fast, safe, and student-powered electric shuttles & carpooling across campus hostels, academic blocks, cafeteria, and transit hubs.
+                </p>
 
-        <!-- DYNAMIC UNIFIED LOGIN FORM -->
-        <form id="unifiedLoginForm">
-            <div class="form-group-uber">
-                <label for="loginUsername" id="userLabel">Student Email / ID</label>
-                <input type="text" id="loginUsername" class="input-uber" placeholder="name@woxsen.edu.in" required autocomplete="username">
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px;">
+                    <button type="button" class="btn-rapido" style="width: auto; padding: 12px 24px;" onclick="focusLoginCard('student')">
+                        <span>Get Started as Student</span>
+                        <span>→</span>
+                    </button>
+                    <button type="button" class="btn secondary" style="padding: 12px 24px;" onclick="focusLoginCard('driver')">
+                        <span>Drive on Campus</span>
+                    </button>
+                </div>
+
+                <div class="hero-stats-row">
+                    <div class="hero-stat-item">
+                        <h3>1,200+</h3>
+                        <p>Campus Trips</p>
+                    </div>
+                    <div class="hero-stat-item">
+                        <h3>3 min</h3>
+                        <p>Avg Pickup Time</p>
+                    </div>
+                    <div class="hero-stat-item">
+                        <h3>100%</h3>
+                        <p>Verified Campus Users</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="form-group-uber">
-                <label for="loginPassword" id="passLabel">Password</label>
-                <input type="password" id="loginPassword" class="input-uber" placeholder="••••••••" required autocomplete="current-password">
+            <!-- Right Column: Unified Student / Driver Login Card -->
+            <div class="unified-auth-card" id="unifiedAuthCard">
+                <!-- Segmented Role Controller (Student | Driver) -->
+                <div class="segmented-control-wrapper" id="segmentedTrack">
+                    <div class="pill-highlight" id="pillHighlight"></div>
+                    <button type="button" class="role-btn active" id="btnRoleStudent" onclick="switchPortalRole('student')">
+                        Student
+                    </button>
+                    <button type="button" class="role-btn" id="btnRoleDriver" onclick="switchPortalRole('driver')">
+                        Driver
+                    </button>
+                </div>
+
+                <!-- DYNAMIC CARD HEADER -->
+                <div class="portal-card-header">
+                    <h2 id="portalTitle" style="font-size: 22px; margin-bottom: 6px;">Student Login</h2>
+                    <p id="portalSubtitle">Book campus rides instantly & track live arrivals</p>
+                </div>
+
+                <!-- DYNAMIC UNIFIED LOGIN FORM -->
+                <form id="unifiedLoginForm">
+                    <div class="form-group-uber">
+                        <label for="loginUsername" id="userLabel">Student Email / ID</label>
+                        <input type="text" id="loginUsername" class="input-uber" placeholder="name@woxsen.edu.in" required autocomplete="username">
+                    </div>
+
+                    <div class="form-group-uber">
+                        <label for="loginPassword" id="passLabel">Password</label>
+                        <input type="password" id="loginPassword" class="input-uber" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="btn-rapido">
+                        <span id="submitIcon">→</span>
+                        <span id="submitBtnText">Get Started as Student</span>
+                    </button>
+                </form>
+
+                <div id="portalMessage" class="form-status-msg"></div>
+
+                <!-- FOOTER LINKS -->
+                <div class="portal-card-footer">
+                    <p style="margin-bottom: 8px;">
+                        <a href="#" onclick="toast('Please contact campus admin to reset your credentials', 'info'); return false;">Forgot Password?</a>
+                    </p>
+                    <p id="signupLinkText">
+                        New Student? <a href="register.html">Create Account</a>
+                    </p>
+                </div>
             </div>
 
-            <button type="submit" id="submitBtn" class="btn-rapido">
-                <span id="submitIcon">→</span>
-                <span id="submitBtnText">Get Started as Student</span>
-            </button>
-        </form>
-
-        <div id="portalMessage" class="form-status-msg"></div>
-
-        <!-- FOOTER LINKS -->
-        <div class="portal-card-footer">
-            <p style="margin-bottom: 8px;">
-                <a href="#" onclick="toast('Please contact campus admin to reset your credentials', 'info'); return false;">Forgot Password?</a>
-            </p>
-            <p id="signupLinkText">
-                New Student? <a href="register.html">Create Account</a>
-            </p>
         </div>
-
     </main>
 
+    <!-- SCRIPTS -->
     <script src="js/config.js"></script>
     <script src="js/app.js"></script>
     <script src="js/auth.js"></script>
+
+    <script>
+        function focusLoginCard(role = 'student') {
+            if (typeof switchPortalRole === 'function') {
+                switchPortalRole(role);
+            }
+            const input = document.getElementById('loginUsername');
+            if (input) {
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    </script>
 </body>
 
 </html>

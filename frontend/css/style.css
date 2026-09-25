@@ -692,7 +692,7 @@ input:checked + .slider:before {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     position: relative;
     overflow-x: hidden;
@@ -1165,49 +1165,8 @@ input:checked + .slider:before {
 }
 
 /* =====================================================
-   ANIMATED BACKGROUND TABS & LANDING SECTIONS
+   ANIMATED BACKGROUND TABS (POST-LOGIN DASHBOARDS)
    ===================================================== */
-
-/* Top Navigation Bar */
-.landing-navbar {
-    width: 100%;
-    padding: 14px 40px;
-    background: rgba(10, 10, 12, 0.78);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-sizing: border-box;
-}
-
-.landing-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: var(--font-heading);
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    color: var(--text-main);
-    text-decoration: none;
-}
-
-.landing-brand-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: rgba(6, 193, 103, 0.12);
-    border: 1px solid rgba(6, 193, 103, 0.3);
-    border-radius: 8px;
-    font-size: 16px;
-}
 
 /* Animated Tabs Container & Floating Pill */
 .animated-tabs-hover-wrapper {
@@ -1267,35 +1226,6 @@ input:checked + .slider:before {
 .nav-tab-btn.active {
     color: #FFFFFF;
     font-weight: 600;
-}
-
-/* Nav Actions Right */
-.landing-nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.btn-nav-portal {
-    background: rgba(0, 200, 83, 0.12);
-    color: #00C853;
-    border: 1px solid rgba(0, 200, 83, 0.3);
-    padding: 8px 18px;
-    border-radius: var(--radius-full);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-nav-portal:hover {
-    background: var(--accent-primary);
-    color: #0F0F0F;
-    border-color: var(--accent-primary);
-    transform: translateY(-1px);
 }
 
 /* Content Area & Tab Panes */
@@ -1565,7 +1495,7 @@ input:checked + .slider:before {
 
 /* Responsive adjustments */
 @media (max-width: 900px) {
-    .landing-navbar {
+    .navbar {
         padding: 12px 20px;
         flex-wrap: wrap;
         gap: 12px;
@@ -1597,5 +1527,460 @@ input:checked + .slider:before {
 
     .contact-layout-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* =====================================================
+   WOXSEN CAMPUS "FIND MY RIDE" MODULES & TRUST SYSTEM
+   ===================================================== */
+
+.institutional-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    background: #F4F4F5;
+    border: 1px solid var(--border-color);
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.kyc-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #00C853;
+    margin-left: 6px;
+}
+
+/* Story & Trust Banner */
+.story-trust-banner {
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 28px;
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 32px;
+    align-items: center;
+    box-shadow: 0 2px 12px rgba(15, 15, 15, 0.04);
+}
+
+.story-trust-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.story-trust-tag {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: #F4F4F5;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 700;
+    color: #0F0F0F;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.story-trust-slogan {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+}
+
+.story-trust-slogan span {
+    color: var(--accent-primary);
+}
+
+.story-safety-promise {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.micro-trust-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.micro-trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main);
+    box-shadow: 0 1px 4px rgba(15, 15, 15, 0.03);
+    transition: border-color 0.2s ease;
+}
+
+.micro-trust-badge:hover {
+    border-color: var(--accent-primary);
+}
+
+.micro-trust-badge .badge-icon {
+    font-size: 14px;
+    color: var(--accent-primary);
+}
+
+.story-trust-image-card {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(15, 15, 15, 0.06);
+    background: #FAFAFA;
+}
+
+.story-trust-image-card img {
+    width: 100%;
+    height: 100%;
+    max-height: 280px;
+    object-fit: cover;
+    display: block;
+}
+
+.story-image-overlay {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.story-image-overlay .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    box-shadow: 0 0 6px var(--accent-primary);
+}
+
+/* Active Ride Module Custom Details */
+.active-ride-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+    padding: 16px;
+    background: #FAFAFA;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.active-ride-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.active-ride-meta-item label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.active-ride-meta-item strong {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.otp-security-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: rgba(0, 200, 83, 0.08);
+    border: 1px solid rgba(0, 200, 83, 0.35);
+    border-radius: var(--radius-sm);
+}
+
+.otp-security-box .otp-code {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    color: var(--accent-primary);
+}
+
+.share-route-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #FFFFFF;
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.share-route-btn:hover {
+    border-color: var(--accent-primary);
+    background: #F4F4F5;
+}
+
+/* Landmark Chips */
+.landmark-chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.landmark-chip {
+    padding: 7px 14px;
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.landmark-chip:hover {
+    border-color: var(--border-highlight);
+    background: #FAFAFA;
+}
+
+.landmark-chip.selected {
+    background: #0F0F0F;
+    color: #FFFFFF;
+    border-color: #0F0F0F;
+}
+
+/* Fixed Flat Pricing Badge */
+.pricing-guarantee-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(0, 200, 83, 0.08);
+    border: 1px solid rgba(0, 200, 83, 0.25);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.pricing-guarantee-badge span.price-tag {
+    color: var(--accent-primary);
+    font-weight: 800;
+}
+
+/* Persistent Campus Safety SOS Pill */
+.safety-sos-fab {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    z-index: 9000;
+    background: #0F0F0F;
+    color: #FFFFFF;
+    border: 1px solid #333333;
+    border-radius: var(--radius-full);
+    padding: 12px 20px;
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(15, 15, 15, 0.2);
+    transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.safety-sos-fab:hover {
+    background: #1F1F1F;
+    transform: translateY(-2px);
+}
+
+.safety-sos-fab .sos-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #FF3B30;
+    box-shadow: 0 0 8px #FF3B30;
+}
+
+/* Campus Emergency SOS Modal */
+.sos-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 15, 15, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.sos-modal-overlay.hidden {
+    display: none;
+}
+
+.sos-modal-card {
+    width: 100%;
+    max-width: 480px;
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: 0 20px 40px rgba(15, 15, 15, 0.15);
+    position: relative;
+}
+
+.sos-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.sos-modal-header h3 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0F0F0F;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sos-modal-close-btn {
+    background: #FAFAFA;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.sos-contact-card {
+    background: #FAFAFA;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sos-contact-info h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 2px;
+}
+
+.sos-contact-info p {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.sos-call-btn {
+    background: #0F0F0F;
+    color: #FFFFFF;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+}
+
+.sos-call-btn:hover {
+    opacity: 0.9;
+}
+
+.sos-broadcast-btn {
+    width: 100%;
+    background: var(--accent-primary);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.sos-broadcast-btn:hover {
+    opacity: 0.92;
+}
+
+@media (max-width: 768px) {
+    .story-trust-banner {
+        grid-template-columns: 1fr;
+        padding: 24px 20px;
+        gap: 24px;
+    }
+
+    .safety-sos-fab {
+        bottom: 84px;
+        left: 16px;
+        padding: 10px 16px;
+        font-size: 12px;
     }
 }

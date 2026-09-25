@@ -3,14 +3,11 @@
    ============================================================ */
 
 const CAMPUS_LOCATIONS = [
-  { id: 'gate',    name: 'Main Gate',        lat: 17.5454, lng: 78.5718 },
-  { id: 'library', name: 'Central Library',  lat: 17.5470, lng: 78.5730 },
-  { id: 'hostelA', name: 'Hostel Block A',   lat: 17.5440, lng: 78.5745 },
-  { id: 'cafe',    name: 'Cafeteria Hub',    lat: 17.5460, lng: 78.5725 },
-  { id: 'csdept',  name: 'CS Department',    lat: 17.5480, lng: 78.5710 },
-  { id: 'aud',     name: 'Auditorium',       lat: 17.5435, lng: 78.5705 },
-  { id: 'mall',    name: 'City Mall',        lat: 17.5100, lng: 78.5500 },
-  { id: 'station', name: 'Railway Station',  lat: 17.4950, lng: 78.5300 }
+  { id: 'hostels', name: 'Hostel Blocks',   lat: 17.5440, lng: 78.5745, tag: 'Residential' },
+  { id: 'library', name: 'Central Library', lat: 17.5470, lng: 78.5730, tag: 'Academic' },
+  { id: 'league',  name: 'The League',      lat: 17.5460, lng: 78.5725, tag: 'Student Hub' },
+  { id: 'gate',    name: 'Main Gate',       lat: 17.5454, lng: 78.5718, tag: 'Transit Gate 1' },
+  { id: 'sports',  name: 'Sports Arena',    lat: 17.5435, lng: 78.5705, tag: 'Recreation' }
 ];
 
 function locationById(id) {
@@ -29,11 +26,10 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// Fixed flat-rate student pricing: ₹15–₹20 (zero surge guarantee)
 function calculateEstimatedFare(distKm) {
-  if (!distKm || distKm <= 0) return 30;
-  const baseFare = 30;
-  const ratePerKm = 15;
-  return Math.round(baseFare + (distKm * ratePerKm));
+  if (!distKm || distKm <= 0.8) return 15;
+  return 20;
 }
 
 function toast(message, type = 'info') {
