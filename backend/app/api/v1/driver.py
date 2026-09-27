@@ -1,6 +1,12 @@
+from typing import Optional
+import random
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+class StartRideRequest(BaseModel):
+    otp: Optional[str] = None
 
 from app.core.dependencies import get_db, get_current_driver
 from app.schemas.driver import (
@@ -124,6 +130,8 @@ async def accept_ride(
             detail="Driver is currently unavailable"
         )
 
+    otp_code = f"{random.randint(1000, 9999)}"
+
     updated_rows = (
         db.query(Ride)
         .filter(
@@ -134,7 +142,9 @@ async def accept_ride(
         .update(
             {
                 Ride.driver_id: current_driver.id,
-                Ride.status: "ACCEPTED"
+                Ride.status: "ACCEPTED",
+                Ride.otp: otp_code,
+                Ride.otp_attempts: 0
             },
             synchronize_session=False
         )
@@ -170,7 +180,7 @@ async def accept_ride(
     await manager.send_notification(
         ride_id=ride.id,
         title="Ride Accepted",
-        message="Your driver has accepted the ride"
+        message="Driver is on the way! Your ride start OTP is ready."
     )
     await manager.send_status(
         ride_id=ride.id,
@@ -188,6 +198,7 @@ async def accept_ride(
 @router.put("/rides/{ride_id}/start")
 async def start_ride(
     ride_id: int,
+    payload: Optional[StartRideRequest] = None,
     db: Session = Depends(get_db),
     current_driver: Driver = Depends(get_current_driver)
 ):
@@ -215,7 +226,42 @@ async def start_ride(
             detail="Only an ACCEPTED ride can be started"
         )
 
+    # Enforce OTP verification
+    if ride.otp:
+        submitted_otp = payload.otp.strip() if (payload and payload.otp) else ""
+        if not submitted_otp:
+            raise HTTPException(
+                status_code=400,
+                detail="Passenger OTP is required to start the ride"
+            )
+
+        if submitted_otp != str(ride.otp).strip():
+            # Wrong OTP - Chance is only once: cancel ride and free driver
+            ride.otp_attempts = (ride.otp_attempts or 0) + 1
+            ride.status = "CANCELLED"
+            current_driver.is_available = True
+            db.commit()
+            db.refresh(ride)
+            db.refresh(current_driver)
+
+            await manager.send_notification(
+                ride_id=ride.id,
+                title="OTP Verification Failed",
+                message="Driver entered an incorrect OTP. Ride has been cancelled. Student can regenerate OTP to retry."
+            )
+            await manager.send_status(
+                ride_id=ride.id,
+                status="CANCELLED"
+            )
+
+            raise HTTPException(
+                status_code=400,
+                detail="Incorrect OTP. Verification failed and ride has been cancelled. Student can regenerate OTP to retry."
+            )
+
+    # Correct OTP verified!
     ride.status = "STARTED"
+    ride.otp_attempts = 0
 
     db.commit()
     db.refresh(ride)
@@ -224,7 +270,7 @@ async def start_ride(
     await manager.send_notification(
         ride_id=ride.id,
         title="Ride Started",
-        message="Your ride has started"
+        message="OTP verified successfully! Your ride has started."
     )
     await manager.send_status(
         ride_id=ride.id,

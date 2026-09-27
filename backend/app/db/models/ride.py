@@ -19,6 +19,8 @@ class Ride(Base):
     status = Column(
         String(50),default="PENDING"
     )
+    otp = Column(String(10), nullable=True)
+    otp_attempts = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True),server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True),

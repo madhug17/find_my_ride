@@ -365,7 +365,47 @@ def get_current_ride(
         Ride.created_at.desc()
     ).first()
 
+    # If no active ride, check if there was a recent OTP verification cancellation
     if ride is None:
+        from datetime import datetime, timezone, timedelta
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=15)
+        recent_failed = db.query(Ride).filter(
+            Ride.student_id == current_student.id,
+            Ride.status == "CANCELLED",
+            Ride.otp_attempts > 0,
+            Ride.updated_at >= cutoff
+        ).order_by(Ride.updated_at.desc()).first()
+
+        if recent_failed is not None:
+            driver_info = None
+            if recent_failed.driver_id:
+                driver_obj = db.query(Driver).filter(Driver.id == recent_failed.driver_id).first()
+                if driver_obj:
+                    driver_info = {
+                        "id": driver_obj.id,
+                        "name": driver_obj.name,
+                        "phone": driver_obj.phone,
+                        "vehicle_number": driver_obj.vehicle_number,
+                        "vehicle_type": driver_obj.vehicle_type
+                    }
+            return {
+                "message": "Ride cancelled due to OTP error",
+                "ride": {
+                    "id": recent_failed.id,
+                    "pickup_loc": recent_failed.pickup_loc,
+                    "drop_loc": recent_failed.drop_loc,
+                    "pickup_lat": recent_failed.pickup_lat,
+                    "pickup_lng": recent_failed.pickup_lng,
+                    "drop_lat": recent_failed.drop_lat,
+                    "drop_lng": recent_failed.drop_lng,
+                    "status": "CANCELLED",
+                    "otp": recent_failed.otp,
+                    "otp_attempts": recent_failed.otp_attempts,
+                    "otp_failed": True,
+                    "driver": driver_info
+                }
+            }
+
         return {
             "message": "No active ride",
             "ride": None
@@ -379,7 +419,9 @@ def get_current_ride(
         "pickup_lng": ride.pickup_lng,
         "drop_lat": ride.drop_lat,
         "drop_lng": ride.drop_lng,
-        "status": ride.status
+        "status": ride.status,
+        "otp": ride.otp if ride.status in ["ACCEPTED", "STARTED"] else None,
+        "otp_attempts": ride.otp_attempts or 0
     }
 
     if ride.driver_id is not None:
@@ -399,6 +441,66 @@ def get_current_ride(
     return {
         "message": "Active ride found",
         "ride": response
+    }
+
+
+@router.post("/{ride_id}/regenerate-otp")
+async def regenerate_ride_otp(
+    ride_id: int,
+    db: Session = Depends(get_db),
+    current_student: Student = Depends(get_current_student)
+):
+    ride = db.query(Ride).filter(
+        Ride.id == ride_id,
+        Ride.student_id == current_student.id
+    ).first()
+
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+
+    if ride.status not in ["ACCEPTED", "CANCELLED"]:
+        raise HTTPException(
+            status_code=400,
+            detail="OTP can only be regenerated for active or verification-failed rides"
+        )
+
+    import random
+    new_otp = f"{random.randint(1000, 9999)}"
+    ride.otp = new_otp
+    ride.otp_attempts = 0
+
+    # If the ride was cancelled due to OTP error, reactivate with driver if available
+    if ride.status == "CANCELLED" and ride.driver_id:
+        driver = db.query(Driver).filter(Driver.id == ride.driver_id).first()
+        if driver:
+            other_active = db.query(Ride).filter(
+                Ride.driver_id == driver.id,
+                Ride.id != ride.id,
+                Ride.status.in_(["ACCEPTED", "STARTED"])
+            ).first()
+            if not other_active:
+                ride.status = "ACCEPTED"
+                driver.is_available = False
+                db.add(driver)
+
+    db.commit()
+    db.refresh(ride)
+
+    await manager.send_notification(
+        ride_id=ride.id,
+        title="New OTP Generated",
+        message="Student generated a new OTP. Please verify to start trip."
+    )
+    await manager.send_status(
+        ride_id=ride.id,
+        status=ride.status
+    )
+
+    return {
+        "message": "OTP regenerated successfully",
+        "ride_id": ride.id,
+        "otp": new_otp,
+        "status": ride.status
     }
 from typing import Optional
 from app.repositories.ride_repository import (

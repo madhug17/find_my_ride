@@ -392,8 +392,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const rideId = getRideId(ride);
 
-        const currentRenderedId = container.dataset.renderedRideId;
-        const otpCode = String((Number(rideId) * 1337 + 421) % 9000 + 1000);
+        if (ride.status === "CANCELLED" && ride.otp_failed) {
+            container.dataset.renderedRideState = `${rideId}-CANCELLED`;
+            container.innerHTML = `
+                <div class="ride-card active-ride-card" style="border: 1.5px solid #ef4444; background: #fff;">
+                    <div class="ride-header">
+                        <div>
+                            <h3 style="color: #dc2626;">Ride #${rideId} — Verification Failed</h3>
+                            <small style="color: var(--text-muted);">Driver entered an incorrect OTP (1 chance policy)</small>
+                        </div>
+                        <div>
+                            ${statusBadge("CANCELLED")}
+                        </div>
+                    </div>
+
+                    <div style="padding: 16px; margin: 16px 0; background: #fef2f2; border-radius: var(--radius-md); border: 1px solid #fee2e2;">
+                        <h4 style="color: #991b1b; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                            <span>⚠️</span> Incorrect OTP Entered by Driver
+                        </h4>
+                        <p style="font-size: 13px; color: #7f1d1d; line-height: 1.5; margin-bottom: 6px;">
+                            The driver submitted an incorrect OTP. As per campus transit policy, 1 attempt is allowed and this trip was cancelled.
+                        </p>
+                        <p style="font-size: 13px; color: #7f1d1d; line-height: 1.5;">
+                            You can <strong>regenerate a new OTP</strong> now to immediately reactivate the ride with your assigned driver, or dismiss to book a new ride.
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button type="button" class="btn primary" onclick="regenerateRideOtp(${rideId})">
+                            🔄 Regenerate OTP & Reactivate Ride
+                        </button>
+                        <button type="button" class="btn secondary" onclick="dismissOtpFailedRide()">
+                            Book New Ride
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        const currentRenderState = `${rideId}-${ride.status}`;
+        const otpCode = ride.otp || "----";
         const captainName = ride.driver?.name ? `${escapeHtml(ride.driver.name)} • Student Captain` : "Assigning Peer Captain...";
         const captainRating = "★ 4.9 (142 campus trips)";
         const vehicleReg = ride.driver?.vehicle_number 
@@ -401,8 +440,8 @@ document.addEventListener("DOMContentLoaded", () => {
             : "TS-09-EV-4040 • Campus Electric Shuttle";
         const etaText = ride.status === "STARTED" ? "En Route (On Board)" : "Arriving in ~3 mins (0.4 km away)";
 
-        if (currentRenderedId !== String(rideId)) {
-            container.dataset.renderedRideId = String(rideId);
+        if (container.dataset.renderedRideState !== currentRenderState) {
+            container.dataset.renderedRideState = currentRenderState;
             container.innerHTML = `
                 <div class="ride-card active-ride-card">
                     <div class="ride-header">
@@ -411,10 +450,19 @@ document.addEventListener("DOMContentLoaded", () => {
                             <small style="color: var(--text-muted);">Woxsen Campus Verified Dispatch</small>
                         </div>
                         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <div class="otp-security-box">
-                                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);">START OTP</span>
-                                <span class="otp-code">${otpCode}</span>
-                            </div>
+                            ${(ride.status === "ACCEPTED" || ride.status === "STARTED") ? `
+                                <div class="otp-security-box" style="display: inline-flex; align-items: center; gap: 10px; background: rgba(0, 200, 83, 0.08); border: 1px solid rgba(0, 200, 83, 0.25); border-radius: var(--radius-sm); padding: 4px 10px;">
+                                    <div>
+                                        <span style="font-size: 10px; font-weight: 700; color: var(--text-muted); display: block; line-height: 1;">RIDE OTP</span>
+                                        <span class="otp-code" id="studentOtpDisplay" style="font-size: 18px; font-weight: 800; letter-spacing: 2px; color: var(--text-main); font-family: monospace;">${otpCode}</span>
+                                    </div>
+                                    ${ride.status === "ACCEPTED" ? `
+                                        <button type="button" onclick="regenerateRideOtp(${rideId})" title="Regenerate OTP if incorrect or needed" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                            🔄 <span>New OTP</span>
+                                        </button>
+                                    ` : ""}
+                                </div>
+                            ` : ""}
                             <div id="activeRideStatusBadge">
                                 ${statusBadge(ride.status)}
                             </div>
@@ -482,6 +530,8 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             const badgeContainer = document.getElementById("activeRideStatusBadge");
             if (badgeContainer) badgeContainer.innerHTML = statusBadge(ride.status);
+            const otpEl = document.getElementById("studentOtpDisplay");
+            if (otpEl && ride.otp) otpEl.textContent = ride.otp;
         }
 
         // Connect WebSocket & location polling safely
@@ -688,6 +738,42 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
             console.error("Cancel ride error:", error);
             toast(error.message, "error");
+        }
+    };
+
+    // =========================================================
+    // OTP MANAGEMENT (REGENERATE & RECOVER)
+    // =========================================================
+    window.regenerateRideOtp = async function (rideId) {
+        if (!rideId || !confirm("Generate a new 4-digit OTP for this trip? Your driver will need to verify this new OTP to start the trip.")) return;
+
+        try {
+            const response = await fetch(`${API_URL}/rides/${rideId}/regenerate-otp`, {
+                method: "POST",
+                headers: authHeaders
+            });
+
+            const result = await parseResponse(response);
+            toast(`New OTP: ${result.otp}. Share this with your driver!`, "success");
+            const otpEl = document.getElementById("studentOtpDisplay");
+            if (otpEl) otpEl.textContent = result.otp;
+            await loadCurrentRide();
+        } catch (error) {
+            console.error("Regenerate OTP error:", error);
+            toast(error.message, "error");
+        }
+    };
+
+    window.dismissOtpFailedRide = function () {
+        const container = document.getElementById("currentRide");
+        if (container) {
+            container.dataset.renderedRideState = "";
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>Ready for New Ride</h3>
+                    <p>Enter your pickup and destination above to book a new campus ride.</p>
+                </div>
+            `;
         }
     };
 
@@ -911,4 +997,11 @@ document.addEventListener("DOMContentLoaded", () => {
     initBookingMap();
     loadCurrentRide();
     loadRideHistory();
+
+    // Auto-poll active ride every 4 seconds to sync status, OTP and driver arrival
+    setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            loadCurrentRide();
+        }
+    }, 4000);
 });

@@ -318,13 +318,29 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </div>
 
-                <div class="button-row" style="margin-top: 18px;">
-                    ${ride.status === "ACCEPTED" ? `
-                        <button class="btn primary" onclick="startTrip(${rideId})">
-                            Start Trip
-                        </button>
-                    ` : ""}
+                ${ride.status === "ACCEPTED" ? `
+                    <div class="driver-otp-box" style="margin-top: 18px; padding: 16px; background: rgba(0, 200, 83, 0.05); border: 1.5px dashed rgba(0, 200, 83, 0.35); border-radius: var(--radius-md);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-weight: 700; font-size: 14px; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px;">
+                                <span>🔐</span> Passenger Start OTP
+                            </span>
+                            <span style="font-size: 11px; font-weight: 700; color: #dc2626; background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); padding: 2px 8px; border-radius: 9999px;">
+                                1 Attempt Allowed
+                            </span>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+                            Ask passenger for their 4-digit start OTP. <strong>Entering an incorrect OTP will cancel the ride.</strong>
+                        </p>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="text" id="driverOtpInput" maxlength="4" placeholder="••••" autocomplete="off" inputmode="numeric" style="width: 140px; height: 42px; text-align: center; font-size: 20px; font-weight: 800; letter-spacing: 6px; font-family: monospace; border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; background: var(--bg-card); color: var(--text-main);">
+                            <button type="button" class="btn primary" id="btnVerifyOtp" onclick="startTripWithOtp(${rideId})" style="height: 42px; padding: 0 20px;">
+                                Verify OTP & Start Trip
+                            </button>
+                        </div>
+                    </div>
+                ` : ""}
 
+                <div class="button-row" style="margin-top: 18px;">
                     ${ride.status === "STARTED" ? `
                         <button class="btn success" onclick="completeTrip(${rideId})">
                             Complete Trip
@@ -339,17 +355,54 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
     }
 
-    window.startTrip = async function(rideId) {
-        if (!confirm(`Start Trip #${rideId}?`)) return;
+    window.startTripWithOtp = async function(rideId) {
+        const input = document.getElementById("driverOtpInput");
+        const otpVal = input ? input.value.trim() : "";
+
+        if (!otpVal) {
+            toast("Please enter the passenger's 4-digit OTP", "error");
+            if (input) input.focus();
+            return;
+        }
+
+        if (otpVal.length !== 4 || !/^\d{4}$/.test(otpVal)) {
+            toast("OTP must be exactly 4 numeric digits", "error");
+            if (input) input.focus();
+            return;
+        }
+
+        if (!confirm(`Verify OTP "${otpVal}" and start Trip #${rideId}?\nNote: Only 1 attempt is allowed. An incorrect OTP will cancel the trip.`)) return;
+
+        const btn = document.getElementById("btnVerifyOtp");
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = "Verifying...";
+        }
+
         try {
-            await apiRequest(`${API_URL}/driver/rides/${rideId}/start`, { method: "PUT" });
-            toast(`Trip #${rideId} Started!`, "success");
+            await apiRequest(`${API_URL}/driver/rides/${rideId}/start`, {
+                method: "PUT",
+                body: JSON.stringify({ otp: otpVal })
+            });
+            toast(`Trip #${rideId} Started! OTP Verified.`, "success");
             await loadCurrentTrip();
         } catch (error) {
             console.error("Start trip error:", error);
             toast(error.message, "error");
+            // If OTP failed and trip cancelled, reload driver status and active trips
+            await loadDriverProfile();
+            await loadCurrentTrip();
+            await loadAvailableRides();
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = "Verify OTP & Start Trip";
+            }
         }
     };
+
+    // Backward-compatible alias
+    window.startTrip = window.startTripWithOtp;
 
     window.completeTrip = async function(rideId) {
         if (!confirm(`Mark Trip #${rideId} as Completed?`)) return;
@@ -636,4 +689,12 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCurrentTrip();
     loadAvailableRides();
     loadDriverHistory();
+
+    // Auto-poll active trip and available rides every 4 seconds
+    setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            loadCurrentTrip();
+            loadAvailableRides();
+        }
+    }, 4000);
 });

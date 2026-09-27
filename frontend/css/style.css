@@ -106,12 +106,39 @@ a {
 
 .navbar .logo,
 .navbar .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
     font-family: var(--font-heading);
     font-size: 20px;
     font-weight: 800;
     color: var(--text-main);
     letter-spacing: -0.03em;
     cursor: pointer;
+    text-decoration: none;
+}
+
+.brand-logo-img {
+    height: 46px;
+    width: auto;
+    max-height: 48px;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-logo-img {
+    height: 36px;
+    width: auto;
+    max-height: 40px;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.portal-brand-header .brand-logo:hover .brand-logo-img,
+.navbar .logo:hover .nav-logo-img {
+    transform: scale(1.03);
 }
 
 .nav-actions {
@@ -1734,6 +1761,15 @@ input:checked + .slider:before {
     font-weight: 800;
     letter-spacing: 0.15em;
     color: var(--accent-primary);
+}
+
+.driver-otp-box {
+    transition: all 0.2s ease;
+}
+
+.driver-otp-box input:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.2) !important;
 }
 
 .share-route-btn {
