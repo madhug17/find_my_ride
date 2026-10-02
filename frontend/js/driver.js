@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateDriverMapMarker(currentDriverLat, currentDriverLng);
 
             if (currentActiveRide) {
-                await sendDriverLocationUpdate(currentActiveRide.id || currentActiveRide.ride_id, currentDriverLat, currentDriverLng);
+                await sendDriverLocationUpdate(currentActiveRide.id || currentActiveRide.ride_id, currentDriverLat, currentDriverLng, false);
             } else {
                 toast(`Driver Location set to ${currentDriverLat}, ${currentDriverLng}`, "info");
             }
@@ -208,11 +208,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.getElementById("updateLocationBtn")?.addEventListener("click", () => {
             if (currentActiveRide) {
-                sendDriverLocationUpdate(currentActiveRide.id || currentActiveRide.ride_id, currentDriverLat, currentDriverLng);
+                sendDriverLocationUpdate(currentActiveRide.id || currentActiveRide.ride_id, currentDriverLat, currentDriverLng, true);
             } else {
                 toast("Location coordinates updated", "info");
             }
         });
+
     }
 
     function updateDriverMapMarker(lat, lng) {
@@ -235,7 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function sendDriverLocationUpdate(rideId, lat, lng) {
+    async function sendDriverLocationUpdate(rideId, lat, lng, showToast = false) {
         if (!rideId) return;
         try {
             await apiRequest(`${API_URL}/driver/location`, {
@@ -246,7 +247,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     longitude: Number(lng)
                 })
             });
-            toast(`Live Location Broadcast: (${lat.toFixed(4)}, ${lng.toFixed(4)})`, "success");
+            if (showToast) {
+                toast(`Live Location Updated: (${lat.toFixed(4)}, ${lng.toFixed(4)})`, "success");
+            }
         } catch (error) {
             console.warn("Location update error:", error);
         }
@@ -263,12 +266,15 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!ride) {
                 currentActiveRide = null;
                 stopGpsSimulator();
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No Active Trip</h3>
-                        <p>Set status to <strong>Online</strong> and accept a ride request below.</p>
-                    </div>
-                `;
+                if (container.dataset.renderedRideState !== "empty") {
+                    container.dataset.renderedRideState = "empty";
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Active Trip</h3>
+                            <p>Set status to <strong>Online</strong> and accept a ride request below.</p>
+                        </div>
+                    `;
+                }
                 return;
             }
 
@@ -277,11 +283,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (error) {
             console.error("Current trip error:", error);
-            container.innerHTML = `
-                <div class="empty-state">
-                    <p>No active trip found.</p>
-                </div>
-            `;
+            if (container.dataset.renderedRideState !== "empty") {
+                container.dataset.renderedRideState = "empty";
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No active trip found.</p>
+                    </div>
+                `;
+            }
         }
     }
 
@@ -290,70 +299,100 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!container) return;
 
         const rideId = ride.ride_id || ride.id;
+        const currentRenderState = `${rideId}-${ride.status}`;
 
-        container.innerHTML = `
-            <div class="ride-card active-ride-card">
-                <div class="ride-header">
-                    <div>
-                        <h3>Trip #${rideId}</h3>
-                        <small style="color: var(--text-muted);">Assigned Passenger Trip</small>
-                    </div>
-                    <div>
-                        ${statusBadge(ride.status)}
-                    </div>
-                </div>
-
-                <div class="route-flow">
-                    <div class="route-step">
-                        <span class="route-label">Pickup:</span>
-                        <div class="route-details">
-                            <strong>${escapeHtml(ride.pickup_loc)}</strong>
+        if (container.dataset.renderedRideState !== currentRenderState) {
+            container.dataset.renderedRideState = currentRenderState;
+            container.innerHTML = `
+                <div class="ride-card active-ride-card">
+                    <div class="ride-header">
+                        <div>
+                            <h3>Trip #${rideId}</h3>
+                            <small style="color: var(--text-muted);">Assigned Passenger Trip</small>
+                        </div>
+                        <div id="driverActiveTripStatusBadge">
+                            ${statusBadge(ride.status)}
                         </div>
                     </div>
-                    <div class="route-step">
-                        <span class="route-label">Destination:</span>
-                        <div class="route-details">
-                            <strong>${escapeHtml(ride.drop_loc)}</strong>
+
+                    <div class="route-flow">
+                        <div class="route-step">
+                            <span class="route-label">Pickup:</span>
+                            <div class="route-details">
+                                <strong>${escapeHtml(ride.pickup_loc)}</strong>
+                            </div>
+                        </div>
+                        <div class="route-step">
+                            <span class="route-label">Destination:</span>
+                            <div class="route-details">
+                                <strong>${escapeHtml(ride.drop_loc)}</strong>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                ${ride.status === "ACCEPTED" ? `
-                    <div class="driver-otp-box" style="margin-top: 18px; padding: 16px; background: rgba(0, 200, 83, 0.05); border: 1.5px dashed rgba(0, 200, 83, 0.35); border-radius: var(--radius-md);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-weight: 700; font-size: 14px; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px;">
-                                <span>🔐</span> Passenger Start OTP
-                            </span>
-                            <span style="font-size: 11px; font-weight: 700; color: #dc2626; background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); padding: 2px 8px; border-radius: 9999px;">
-                                1 Attempt Allowed
-                            </span>
+                    ${ride.status === "ACCEPTED" ? `
+                        <div class="driver-otp-box" style="margin-top: 18px; padding: 16px; background: rgba(0, 200, 83, 0.05); border: 1.5px dashed rgba(0, 200, 83, 0.35); border-radius: var(--radius-md);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-weight: 700; font-size: 14px; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px;">
+                                    <span>🔐</span> Passenger Start OTP
+                                </span>
+                                <span style="font-size: 11px; font-weight: 700; color: #dc2626; background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); padding: 2px 8px; border-radius: 9999px;">
+                                    1 Attempt Allowed
+                                </span>
+                            </div>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+                                Ask passenger for their 4-digit start OTP. <strong>Entering an incorrect OTP will cancel the ride.</strong>
+                            </p>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="text" id="driverOtpInput" maxlength="4" placeholder="••••" autocomplete="off" inputmode="numeric" style="width: 140px; height: 42px; text-align: center; font-size: 20px; font-weight: 800; letter-spacing: 6px; font-family: monospace; border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; background: var(--bg-card); color: var(--text-main);">
+                                <button type="button" class="btn primary" id="btnVerifyOtp" onclick="startTripWithOtp(${rideId})" style="height: 42px; padding: 0 20px;">
+                                    Verify OTP & Start Trip
+                                </button>
+                            </div>
                         </div>
-                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
-                            Ask passenger for their 4-digit start OTP. <strong>Entering an incorrect OTP will cancel the ride.</strong>
-                        </p>
-                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                            <input type="text" id="driverOtpInput" maxlength="4" placeholder="••••" autocomplete="off" inputmode="numeric" style="width: 140px; height: 42px; text-align: center; font-size: 20px; font-weight: 800; letter-spacing: 6px; font-family: monospace; border: 1px solid var(--border-color); border-radius: var(--radius-sm); outline: none; background: var(--bg-card); color: var(--text-main);">
-                            <button type="button" class="btn primary" id="btnVerifyOtp" onclick="startTripWithOtp(${rideId})" style="height: 42px; padding: 0 20px;">
-                                Verify OTP & Start Trip
-                            </button>
-                        </div>
-                    </div>
-                ` : ""}
-
-                <div class="button-row" style="margin-top: 18px;">
-                    ${ride.status === "STARTED" ? `
-                        <button class="btn success" onclick="completeTrip(${rideId})">
-                            Complete Trip
-                        </button>
                     ` : ""}
 
-                    <button class="btn secondary" id="gpsSimBtn" onclick="toggleGpsSimulator(${rideId})">
-                        ${gpsSimulatorInterval ? 'Stop GPS Simulator' : 'Start GPS Simulator'}
-                    </button>
+                    ${(ride.status === "ACCEPTED" || ride.status === "STARTED") ? `
+                        <!-- IN-TRIP LIVE PEER CHAT BOX -->
+                        <div class="ride-chat-section" id="driverRideChatSection">
+                            <div class="ride-chat-header">
+                                <h4>💬 Live Peer Chat (With Passenger)</h4>
+                                <span style="font-size: 11px; color: var(--text-muted);">Real-Time & Direct</span>
+                            </div>
+                            <div class="chat-messages-container" id="driverRideChatMessages">
+                                <div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px 0;">Loading messages...</div>
+                            </div>
+                            <form class="chat-input-form" onsubmit="handleSendDriverChatMessage(event, ${rideId}, 'driver')">
+                                <input type="text" id="driverChatInput" placeholder="Message passenger (e.g. 'I have arrived at pickup point')..." autocomplete="off" required>
+                                <button type="submit" class="btn primary small-button">Send</button>
+                            </form>
+                        </div>
+                    ` : ""}
+
+                    <div class="button-row" style="margin-top: 18px;">
+                        ${ride.status === "STARTED" ? `
+                            <button class="btn success" onclick="completeTrip(${rideId})">
+                                Complete Trip
+                            </button>
+                        ` : ""}
+
+                        <button class="btn secondary" id="gpsSimBtn" onclick="toggleGpsSimulator(${rideId})">
+                            ${gpsSimulatorInterval ? 'Stop GPS Simulator' : 'Start GPS Simulator'}
+                        </button>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+
+            if (ride.status === "ACCEPTED" || ride.status === "STARTED") {
+                loadDriverRideChatMessages(rideId);
+                connectDriverRideWebSocket(rideId);
+            }
+        } else {
+            const badgeContainer = document.getElementById("driverActiveTripStatusBadge");
+            if (badgeContainer) badgeContainer.innerHTML = statusBadge(ride.status);
+        }
     }
+
 
     window.startTripWithOtp = async function(rideId) {
         const input = document.getElementById("driverOtpInput");
@@ -682,6 +721,179 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
         }
+    }
+
+    // =========================================================
+    // DRIVER WEBSOCKET & LIVE PEER CHAT
+    // =========================================================
+    let driverRideSocket = null;
+    let activeDriverWsRideId = null;
+
+    function connectDriverRideWebSocket(rideId) {
+        if (!rideId) return;
+        if (activeDriverWsRideId === rideId && driverRideSocket && (driverRideSocket.readyState === WebSocket.OPEN || driverRideSocket.readyState === WebSocket.CONNECTING)) {
+            return;
+        }
+        closeDriverRideWebSocket();
+        activeDriverWsRideId = rideId;
+
+        const wsUrl = getWsUrl(`/rides/ws/${rideId}`);
+        try {
+            driverRideSocket = new WebSocket(wsUrl);
+            driverRideSocket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === "chat_message") {
+                        const chatContainer = document.getElementById("driverRideChatMessages");
+                        if (chatContainer) {
+                            const isMine = data.sender_role === "driver";
+                            appendDriverChatMessageBubble(chatContainer, data, isMine);
+                        }
+                    } else if (data.type === "ride_status") {
+                        toast(`Ride Status Updated: ${data.status}`, "info");
+                        if (data.status === "CANCELLED" || data.status === "COMPLETED") {
+                            closeDriverRideWebSocket();
+                            loadDriverProfile();
+                            loadCurrentTrip();
+                            loadAvailableRides();
+                        }
+                    } else if (data.type === "notification") {
+                        toast(`${data.title}: ${data.message}`, "info");
+                    }
+                } catch {}
+            };
+            driverRideSocket.onclose = () => {
+                driverRideSocket = null;
+                activeDriverWsRideId = null;
+            };
+        } catch (err) {
+            console.warn("Driver WS error:", err);
+        }
+    }
+
+    function closeDriverRideWebSocket() {
+        if (driverRideSocket) {
+            try { driverRideSocket.close(); } catch {}
+            driverRideSocket = null;
+        }
+        activeDriverWsRideId = null;
+    }
+
+    async function loadDriverRideChatMessages(rideId) {
+        const container = document.getElementById("driverRideChatMessages");
+        if (!container || !rideId) return;
+        try {
+            const response = await fetch(`${API_URL}/rides/${rideId}/messages`, {
+                headers: authHeaders()
+            });
+            if (!response.ok) return;
+            const messages = await response.json();
+            if (messages.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px 0;">No messages yet with passenger.</div>`;
+                return;
+            }
+            container.innerHTML = "";
+            messages.forEach(msg => {
+                appendDriverChatMessageBubble(container, msg, msg.sender_role === "driver");
+            });
+        } catch (err) {
+            console.warn("Load chat error:", err);
+        }
+    }
+
+    function appendDriverChatMessageBubble(container, msg, isMine) {
+        if (!container) return;
+        const placeholder = container.querySelector("div[style*='text-align: center']");
+        if (placeholder) placeholder.remove();
+
+        const bubble = document.createElement("div");
+        bubble.className = `chat-bubble ${isMine ? 'mine' : 'other'}`;
+        bubble.innerHTML = `
+            <div class="chat-bubble-sender">${escapeHtml(msg.sender_name || (isMine ? 'You (Captain)' : 'Passenger'))}</div>
+            <div>${escapeHtml(msg.message)}</div>
+            <div class="chat-bubble-time">${escapeHtml(msg.timestamp || msg.created_at || '')}</div>
+        `;
+        container.appendChild(bubble);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    window.handleSendDriverChatMessage = async function(e, rideId, role) {
+        e.preventDefault();
+        const input = document.getElementById("driverChatInput");
+        const msgText = input ? input.value.trim() : "";
+        if (!msgText || !rideId) return;
+
+        if (input) input.value = "";
+        const driverEmail = localStorage.getItem("user_email") || "Captain";
+        const driverName = driverEmail.split('@')[0];
+
+        try {
+            const response = await fetch(`${API_URL}/rides/${rideId}/messages`, {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    message: msgText,
+                    sender_role: "driver",
+                    sender_name: driverName
+                })
+            });
+            const result = await response.json();
+            const container = document.getElementById("driverRideChatMessages");
+            if (container) {
+                appendDriverChatMessageBubble(container, result, true);
+            }
+        } catch (err) {
+            console.error("Send chat message error:", err);
+            toast("Failed to send chat message", "error");
+        }
+    };
+
+    // =========================================================
+    // CAMPUS AI HELP SUPPORT ASSISTANT FOR DRIVER
+    // =========================================================
+    window.toggleHelpBot = function() {
+        const win = document.getElementById("helpBotWindow");
+        if (win) win.classList.toggle("hidden");
+    };
+
+    window.askHelpQuery = async function(question) {
+        const input = document.getElementById("helpBotInput");
+        if (input) input.value = question;
+        await submitDriverHelpQuery(question);
+    };
+
+    window.handleHelpQuerySubmit = async function(e) {
+        e.preventDefault();
+        const input = document.getElementById("helpBotInput");
+        const q = input ? input.value.trim() : "";
+        if (!q) return;
+        if (input) input.value = "";
+        await submitDriverHelpQuery(q);
+    };
+
+    async function submitDriverHelpQuery(question) {
+        appendDriverHelpBotBubble(question, true);
+        try {
+            const response = await fetch(`${API_URL}/help/chat`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: question, role: "driver" })
+            });
+            const data = await response.json();
+            appendDriverHelpBotBubble(data.answer || "I am here to assist you with driving on campus.", false);
+        } catch (error) {
+            appendDriverHelpBotBubble("Sorry, could not connect to Mobility Assistant. Please try again.", false);
+        }
+    }
+
+    function appendDriverHelpBotBubble(text, isUser) {
+        const box = document.getElementById("helpBotMessages");
+        if (!box) return;
+        const bubble = document.createElement("div");
+        bubble.className = `help-bot-bubble ${isUser ? 'user' : 'bot'}`;
+        bubble.textContent = text;
+        box.appendChild(bubble);
+        box.scrollTop = box.scrollHeight;
     }
 
     initDriverMap();

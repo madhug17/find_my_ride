@@ -20,14 +20,19 @@ from app.db.models.chat import RideChatMessage
 # Ensure all database tables exist immediately
 Base.metadata.create_all(bind=engine)
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
 app = FastAPI(
     title="Find My Ride",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
-@app.on_event("startup")
-def on_startup():
-    Base.metadata.create_all(bind=engine)
 
 # Enable CORS for all origins (file://, localhost, live-server)
 app.add_middleware(

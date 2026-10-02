@@ -364,12 +364,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     clearInterval(locationPollInterval);
                     locationPollInterval = null;
                 }
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No Active Ride</h3>
-                        <p>You don't have an active ride request right now.</p>
-                    </div>
-                `;
+                if (container.dataset.renderedRideState !== "empty") {
+                    container.dataset.renderedRideState = "empty";
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Active Ride</h3>
+                            <p>You don't have an active ride request right now.</p>
+                        </div>
+                    `;
+                }
                 return;
             }
 
@@ -377,14 +380,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (error) {
             console.error("Current ride error:", error);
-            container.innerHTML = `
-                <div class="error-message" style="text-align:center; color:#ef4444; padding:20px;">
-                    <p>Unable to load current ride.</p>
-                    <small>${escapeHtml(error.message)}</small>
-                </div>
-            `;
+            if (container.dataset.renderedRideState !== "error") {
+                container.dataset.renderedRideState = "error";
+                container.innerHTML = `
+                    <div class="error-message" style="text-align:center; color:#ef4444; padding:20px;">
+                        <p>Unable to load current ride.</p>
+                        <small>${escapeHtml(error.message)}</small>
+                    </div>
+                `;
+            }
         }
     }
+
 
     function displayCurrentRide(ride) {
         const container = document.getElementById("currentRide");
@@ -508,6 +515,23 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div id="activeRideMap" style="width: 100%; height: 280px; border-radius: var(--radius-sm); background: var(--bg-secondary);"></div>
                     </div>
 
+                    ${(ride.status === "ACCEPTED" || ride.status === "STARTED") ? `
+                        <!-- IN-RIDE LIVE PEER CHAT BOX -->
+                        <div class="ride-chat-section" id="rideChatSection">
+                            <div class="ride-chat-header">
+                                <h4>💬 Live Peer Chat (With Captain)</h4>
+                                <span style="font-size: 11px; color: var(--text-muted);">Real-Time & Direct</span>
+                            </div>
+                            <div class="chat-messages-container" id="rideChatMessages">
+                                <div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px 0;">Loading messages...</div>
+                            </div>
+                            <form class="chat-input-form" onsubmit="handleSendRideChatMessage(event, ${rideId}, 'student')">
+                                <input type="text" id="rideChatInput" placeholder="Message your captain (e.g. 'Waiting near entrance')..." autocomplete="off" required>
+                                <button type="submit" class="btn primary small-button">Send</button>
+                            </form>
+                        </div>
+                    ` : ""}
+
                     <div style="margin-top: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <button type="button" class="share-route-btn" onclick="shareLiveRoute(${rideId})">
@@ -527,6 +551,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
             initActiveRideMap(ride);
+            if (ride.status === "ACCEPTED" || ride.status === "STARTED") {
+                loadRideChatMessages(rideId);
+            }
         } else {
             const badgeContainer = document.getElementById("activeRideStatusBadge");
             if (badgeContainer) badgeContainer.innerHTML = statusBadge(ride.status);
@@ -674,6 +701,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (data.type === "driver_location" || data.type === "location") {
                         if (data.latitude && data.longitude) {
                             updateActiveDriverMarker(data.latitude, data.longitude);
+                        }
+                    } else if (data.type === "chat_message") {
+                        const chatContainer = document.getElementById("rideChatMessages");
+                        if (chatContainer) {
+                            const isMine = data.sender_role === "student";
+                            appendChatMessageBubble(chatContainer, data, isMine);
                         }
                     } else if (data.type === "ride_status") {
                         toast(`Ride Status: ${data.status}`, "info");
@@ -987,6 +1020,126 @@ document.addEventListener("DOMContentLoaded", () => {
             { enableHighAccuracy: true, timeout: 8000 }
         );
     };
+
+    // =========================================================
+    // IN-RIDE LIVE PEER CHAT HELPERS
+    // =========================================================
+    async function loadRideChatMessages(rideId) {
+        const container = document.getElementById("rideChatMessages");
+        if (!container || !rideId) return;
+        try {
+            const response = await fetch(`${API_URL}/rides/${rideId}/messages`, {
+                headers: authHeaders
+            });
+            if (!response.ok) return;
+            const messages = await response.json();
+            if (messages.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px 0;">No messages yet. Say hello to your captain!</div>`;
+                return;
+            }
+            container.innerHTML = "";
+            messages.forEach(msg => {
+                appendChatMessageBubble(container, msg, msg.sender_role === "student");
+            });
+        } catch (err) {
+            console.warn("Load chat error:", err);
+        }
+    }
+
+    function appendChatMessageBubble(container, msg, isMine) {
+        if (!container) return;
+        const placeholder = container.querySelector("div[style*='text-align: center']");
+        if (placeholder) placeholder.remove();
+
+        const bubble = document.createElement("div");
+        bubble.className = `chat-bubble ${isMine ? 'mine' : 'other'}`;
+        bubble.innerHTML = `
+            <div class="chat-bubble-sender">${escapeHtml(msg.sender_name || (isMine ? 'You' : 'Captain'))}</div>
+            <div>${escapeHtml(msg.message)}</div>
+            <div class="chat-bubble-time">${escapeHtml(msg.timestamp || msg.created_at || '')}</div>
+        `;
+        container.appendChild(bubble);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    window.handleSendRideChatMessage = async function(e, rideId, role) {
+        e.preventDefault();
+        const input = document.getElementById("rideChatInput");
+        const msgText = input ? input.value.trim() : "";
+        if (!msgText || !rideId) return;
+
+        if (input) input.value = "";
+        const studentEmail = localStorage.getItem("user_email") || "Student";
+        const studentName = studentEmail.split('@')[0];
+
+        try {
+            const response = await fetch(`${API_URL}/rides/${rideId}/messages`, {
+                method: "POST",
+                headers: authHeaders,
+                body: JSON.stringify({
+                    message: msgText,
+                    sender_role: "student",
+                    sender_name: studentName
+                })
+            });
+            const result = await response.json();
+            const container = document.getElementById("rideChatMessages");
+            if (container) {
+                appendChatMessageBubble(container, result, true);
+            }
+        } catch (err) {
+            console.error("Send chat message error:", err);
+            toast("Failed to send chat message", "error");
+        }
+    };
+
+    // =========================================================
+    // CAMPUS AI HELP SUPPORT ASSISTANT
+    // =========================================================
+    window.toggleHelpBot = function() {
+        const win = document.getElementById("helpBotWindow");
+        if (win) win.classList.toggle("hidden");
+    };
+
+    window.askHelpQuery = async function(question) {
+        const input = document.getElementById("helpBotInput");
+        if (input) input.value = question;
+        await submitHelpQuery(question);
+    };
+
+    window.handleHelpQuerySubmit = async function(e) {
+        e.preventDefault();
+        const input = document.getElementById("helpBotInput");
+        const q = input ? input.value.trim() : "";
+        if (!q) return;
+        if (input) input.value = "";
+        await submitHelpQuery(q);
+    };
+
+    async function submitHelpQuery(question) {
+        appendHelpBotBubble(question, true);
+        try {
+            const response = await fetch(`${API_URL}/help/chat`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: question, role: "student" })
+            });
+            const data = await response.json();
+            appendHelpBotBubble(data.answer || "I am here to help you navigate campus.", false);
+        } catch (error) {
+            appendHelpBotBubble("Sorry, could not connect to Campus Support. Please try again.", false);
+        }
+    }
+
+    function appendHelpBotBubble(text, isUser) {
+        const box = document.getElementById("helpBotMessages");
+        if (!box) return;
+        const bubble = document.createElement("div");
+        bubble.className = `help-bot-bubble ${isUser ? 'user' : 'bot'}`;
+        bubble.textContent = text;
+        box.appendChild(bubble);
+        box.scrollTop = box.scrollHeight;
+    }
 
     // Expose helpers
     window.loadCurrentRide = loadCurrentRide;

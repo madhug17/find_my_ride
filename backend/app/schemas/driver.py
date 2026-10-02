@@ -1,14 +1,18 @@
-from pydantic import BaseModel,EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
+from typing import Optional
+
 class DriverRegister(BaseModel):
     name: str
     email: str
-    phone: int
+    phone: str
     vehicle_type: str
     password: str
-    vehicle_number : str
+    vehicle_number: str
+
 class DriverLogin(BaseModel):
     email: EmailStr
     password: str
+
 class DriverResponse(BaseModel):
     id: int
     name: str
@@ -17,12 +21,12 @@ class DriverResponse(BaseModel):
     vehicle_number: str
     vehicle_type: str
     is_available: bool
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DriverAvailability(BaseModel):
     is_available: bool
+
 class DriverLocation(BaseModel):
     ride_id: int
     latitude: float
-    longitude: float
+    longitude: float

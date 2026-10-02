@@ -412,7 +412,37 @@
         </div>
     </div>
 
+    <!-- 7. PERSISTENT CAMPUS AI ASSISTANT FAB -->
+    <button class="help-chatbot-fab" onclick="toggleHelpBot()" id="helpBotFab" title="Campus Mobility Assistant">
+        <span>💬</span>
+        <span>Campus Assistant</span>
+    </button>
+
+    <!-- 7. CAMPUS AI ASSISTANT WINDOW -->
+    <div id="helpBotWindow" class="help-chatbot-window hidden">
+        <div class="help-bot-header">
+            <h3>🤖 Campus Mobility Assistant</h3>
+            <button type="button" onclick="toggleHelpBot()" title="Close Assistant">✕</button>
+        </div>
+        <div class="help-bot-messages" id="helpBotMessages">
+            <div class="help-bot-bubble bot">
+                Hello! I am your Find My Ride campus support assistant. How can I help you navigate Woxsen University today?
+            </div>
+        </div>
+        <div class="help-bot-chips" id="helpBotChips">
+            <button type="button" class="help-chip" onclick="askHelpQuery('How do I book a ride?')">How to book?</button>
+            <button type="button" class="help-chip" onclick="askHelpQuery('What is the ride fare?')">Fare & Pricing</button>
+            <button type="button" class="help-chip" onclick="askHelpQuery('What is the emergency security contact?')">Emergency SOS</button>
+            <button type="button" class="help-chip" onclick="askHelpQuery('What safety policies are enforced?')">Safety Rules</button>
+        </div>
+        <form class="help-bot-input-area" onsubmit="handleHelpQuerySubmit(event)">
+            <input type="text" id="helpBotInput" placeholder="Ask a question..." autocomplete="off" required>
+            <button type="submit" class="btn primary small-button">Send</button>
+        </form>
+    </div>
+
     <!-- RATING MODAL DIALOG -->
+
     <dialog id="ratingModal" style="background: var(--bg-secondary); border: 1px solid var(--border-highlight); border-radius: var(--radius-lg); padding: 30px; color: var(--text-main); max-width: 440px; margin: auto; box-shadow: var(--shadow-card);">
         <h3 style="margin-bottom: 10px;">Rate Your Captain</h3>
         <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">Rate your campus experience for Ride #<span id="modalRideId"></span></p>

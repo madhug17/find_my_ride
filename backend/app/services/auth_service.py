@@ -17,18 +17,24 @@ from app.db.models.student import Student
 def register_student(db: Session, data):
 
     existing = get_student_by_email(db, data.email)
-
     if existing:
         raise Exception("Email already registered")
+
+    phone_str = str(data.phone).strip() if data.phone is not None else None
+    if phone_str:
+        existing_phone = db.query(Student).filter(Student.phone == phone_str).first()
+        if existing_phone:
+            raise Exception("Phone number already registered")
 
     student = Student(
         name=data.name,
         email=data.email,
-        phone=data.phone,
+        phone=phone_str,
         password=hash_password(data.password),
     )
 
     return create_student(db, student)
+
 
 
 def login_student(db: Session, email: str, password: str):

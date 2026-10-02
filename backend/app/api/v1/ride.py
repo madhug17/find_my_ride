@@ -173,8 +173,8 @@ async def post_ride_message(
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
 
-    sender_role = getattr(data, "sender_role", "user")
-    sender_name = getattr(data, "sender_name", "User")
+    sender_role = data.sender_role or "student"
+    sender_name = data.sender_name or "Student"
 
     chat_msg = RideChatMessage(
         ride_id=ride_id,
@@ -240,43 +240,50 @@ def get_ride_status(
             Driver.id == ride.driver_id
         ).first()
 
-        response["driver"] = {
-            "id": driver.id,
-            "name": driver.name,
-            "phone": driver.phone,
-            "vehicle_number": driver.vehicle_number,
-            "vehicle_type": driver.vehicle_type
-        }
+        if driver:
+            response["driver"] = {
+                "id": driver.id,
+                "name": driver.name,
+                "phone": driver.phone,
+                "vehicle_number": driver.vehicle_number,
+                "vehicle_type": driver.vehicle_type
+            }
 
     return response
 
 
 @router.put("/{ride_id}/cancel")
 async def cancel_ride(
-    ride_id:int,
-    db:Session=Depends(get_db),
-    current_student:Student=Depends(get_current_student)
-
+    ride_id: int,
+    db: Session = Depends(get_db),
+    current_student: Student = Depends(get_current_student)
 ):
-    ride = db.query(Ride).filter(Ride.id==ride_id).first()
+    ride = db.query(Ride).filter(Ride.id == ride_id).first()
     if ride is None:
         raise HTTPException(
             status_code=404,
             detail="Ride not found"
         )
-    if ride.student_id!=current_student.id:
+    if ride.student_id != current_student.id:
         raise HTTPException(
             status_code=403,
             detail="You are not allowed to cancel this ride"
         )
-    if ride.status != "PENDING":
+    if ride.status not in ["PENDING", "ACCEPTED"]:
         raise HTTPException(
             status_code=400,
-            detail="Only a PENDING ride can be cancelled"
+            detail="Only PENDING or ACCEPTED rides can be cancelled"
         )
-    ride.status="CANCELLED"
+    ride.status = "CANCELLED"
+    if ride.driver_id:
+        driver = db.query(Driver).filter(Driver.id == ride.driver_id).first()
+        if driver:
+            driver.is_available = True
+            db.add(driver)
+
     db.commit()
     db.refresh(ride)
+
 
     await manager.send_status(
         ride_id=ride.id,

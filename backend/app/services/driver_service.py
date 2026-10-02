@@ -22,16 +22,23 @@ def register_driver(db: Session, data):
     if existing_driver:
         raise Exception("Driver already exists")
 
+    phone_str = str(data.phone).strip() if data.phone is not None else None
+    if phone_str:
+        existing_phone = db.query(Driver).filter(Driver.phone == phone_str).first()
+        if existing_phone:
+            raise Exception("Phone number already registered")
+
     driver = Driver(
         name=data.name,
         email=data.email,
-        phone=data.phone,
+        phone=phone_str,
         vehicle_number=data.vehicle_number,
         vehicle_type=data.vehicle_type,
         password=hash_password(data.password),
     )
 
     return create_driver(db, driver)
+
 def login_driver(
     db: Session,
     email: str,

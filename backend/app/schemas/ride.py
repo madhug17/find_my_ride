@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
 class RideCreate(BaseModel):
     pickup_loc: str
     drop_loc: str
@@ -8,14 +9,15 @@ class RideCreate(BaseModel):
 
     drop_lat: float
     drop_lng: float
+
 class RideResponse(BaseModel):
     id: int
     pickup_loc: str
     drop_loc: str
     status: str
-    class Congig:
-        from_attributes: True
-class DriverLocationResponse(BaseException):
-    driver_id : int
+    model_config = ConfigDict(from_attributes=True)
+
+class DriverLocationResponse(BaseModel):
+    driver_id: int
     latitude: float
-    longitude: float
+    longitude: float

@@ -298,7 +298,37 @@
 
     </main>
 
+    <!-- PERSISTENT CAMPUS AI ASSISTANT FAB -->
+    <button class="help-chatbot-fab" onclick="toggleHelpBot()" id="helpBotFab" title="Campus Mobility Assistant">
+        <span>💬</span>
+        <span>Campus Assistant</span>
+    </button>
+
+    <!-- CAMPUS AI ASSISTANT WINDOW -->
+    <div id="helpBotWindow" class="help-chatbot-window hidden">
+        <div class="help-bot-header">
+            <h3>🤖 Driver Mobility Assistant</h3>
+            <button type="button" onclick="toggleHelpBot()" title="Close Assistant">✕</button>
+        </div>
+        <div class="help-bot-messages" id="helpBotMessages">
+            <div class="help-bot-bubble bot">
+                Hello Driver Partner! I am your Find My Ride campus assistant. How can I assist you with trips or navigation today?
+            </div>
+        </div>
+        <div class="help-bot-chips" id="helpBotChips">
+            <button type="button" class="help-chip" onclick="askHelpQuery('How do I accept rides?')">Accepting Rides</button>
+            <button type="button" class="help-chip" onclick="askHelpQuery('How does passenger OTP start work?')">OTP Verification</button>
+            <button type="button" class="help-chip" onclick="askHelpQuery('What are campus speed limits?')">Speed Limits</button>
+            <button type="button" class="help-chip" onclick="askHelpQuery('What is the emergency security contact?')">Emergency Dispatch</button>
+        </div>
+        <form class="help-bot-input-area" onsubmit="handleHelpQuerySubmit(event)">
+            <input type="text" id="helpBotInput" placeholder="Ask a question..." autocomplete="off" required>
+            <button type="submit" class="btn primary small-button">Send</button>
+        </form>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script src="js/config.js"></script>
     <script src="js/app.js"></script>
     <script src="js/animated-background.js"></script>
