@@ -86,7 +86,8 @@ def me(
         "vehicle_type": current_driver.vehicle_type,
         "is_available": current_driver.is_available,
         "latitude": current_driver.latitude,
-        "longitude": current_driver.longitude
+        "longitude": current_driver.longitude,
+        "created_at": current_driver.created_at.isoformat() if current_driver.created_at else None
     }
 
 

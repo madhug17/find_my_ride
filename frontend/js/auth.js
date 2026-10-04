@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const messageEl = document.getElementById(elId);
         if (messageEl) {
             messageEl.textContent = text;
-            messageEl.style.color = isError ? "#ef4444" : "#10b981";
+            messageEl.style.color = isError ? "#FF3B30" : "#34C759";
         }
         if (typeof toast === 'function' && text) {
             toast(text, isError ? 'error' : 'success');
@@ -82,6 +82,78 @@ document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("role") === "driver") {
         switchPortalRole("driver");
+    }
+
+    // ----------------------------------------------------
+    // UNIFIED REGISTRATION ROLE SWITCHER
+    // ----------------------------------------------------
+    window.switchRegisterRole = function(role) {
+        const regTrack = document.getElementById("regSegmentedTrack");
+        const btnStudent = document.getElementById("btnRegStudent");
+        const btnDriver = document.getElementById("btnRegDriver");
+        const regBadgeText = document.getElementById("regBadgeText");
+        const regBadgeDot = document.getElementById("regBadgeDot");
+        const regBadgeEl = document.getElementById("regBadgeEl");
+        const regTitle = document.getElementById("regTitle");
+        const regSubtitle = document.getElementById("regSubtitle");
+        const studentForm = document.getElementById("studentRegisterForm");
+        const driverForm = document.getElementById("driverRegisterForm");
+        const regLoginLink = document.getElementById("regLoginLink");
+        const studentMsg = document.getElementById("message");
+        const driverMsg = document.getElementById("driverMessage");
+
+        if (studentMsg) studentMsg.textContent = "";
+        if (driverMsg) driverMsg.textContent = "";
+
+        if (role === "driver") {
+            if (regTrack) regTrack.classList.add("driver-active");
+            if (btnStudent) btnStudent.classList.remove("active");
+            if (btnDriver) btnDriver.classList.add("active");
+
+            if (regTitle) regTitle.textContent = "Driver Registration";
+            if (regSubtitle) regSubtitle.textContent = "Join as a verified campus shuttle / carpool captain";
+            if (regBadgeText) regBadgeText.textContent = "Woxsen Captain Network";
+            if (regBadgeEl) {
+                regBadgeEl.style.background = "rgba(0, 113, 227, 0.1)";
+                regBadgeEl.style.borderColor = "rgba(0, 113, 227, 0.25)";
+                regBadgeEl.style.color = "#0071E3";
+            }
+            if (regBadgeDot) {
+                regBadgeDot.style.background = "#0071E3";
+                regBadgeDot.style.boxShadow = "0 0 10px #0071E3";
+            }
+            if (studentForm) studentForm.style.display = "none";
+            if (driverForm) driverForm.style.display = "flex";
+            if (regLoginLink) {
+                regLoginLink.innerHTML = 'Already registered as driver? <a href="index.html?role=driver">Driver Login</a>';
+            }
+        } else {
+            if (regTrack) regTrack.classList.remove("driver-active");
+            if (btnDriver) btnDriver.classList.remove("active");
+            if (btnStudent) btnStudent.classList.add("active");
+
+            if (regTitle) regTitle.textContent = "Student Registration";
+            if (regSubtitle) regSubtitle.textContent = "Create an account to start booking campus rides";
+            if (regBadgeText) regBadgeText.textContent = "Woxsen Student Network";
+            if (regBadgeEl) {
+                regBadgeEl.style.background = "rgba(52, 199, 89, 0.1)";
+                regBadgeEl.style.borderColor = "rgba(52, 199, 89, 0.25)";
+                regBadgeEl.style.color = "#34C759";
+            }
+            if (regBadgeDot) {
+                regBadgeDot.style.background = "#34C759";
+                regBadgeDot.style.boxShadow = "0 0 10px #34C759";
+            }
+            if (studentForm) studentForm.style.display = "flex";
+            if (driverForm) driverForm.style.display = "none";
+            if (regLoginLink) {
+                regLoginLink.innerHTML = 'Already registered as student? <a href="index.html?role=student">Sign In here</a>';
+            }
+        }
+    };
+
+    if (urlParams.get("role") === "driver" && document.getElementById("regSegmentedTrack")) {
+        switchRegisterRole("driver");
     }
 
     // ----------------------------------------------------

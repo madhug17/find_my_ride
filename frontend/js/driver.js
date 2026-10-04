@@ -52,37 +52,107 @@ document.addEventListener("DOMContentLoaded", () => {
     let gpsSimulatorInterval = null;
     let gpsWatchId = null;
 
-    async function loadDriverProfile() {
+    async function loadDriverProfile(showToast = false) {
         try {
             const driver = await apiRequest(`${API_URL}/driver/me`);
 
-            const nameEl = document.getElementById("driverName");
-            const emailEl = document.getElementById("driverEmail");
-            const phoneEl = document.getElementById("driverPhone");
-            const vehicleEl = document.getElementById("driverVehicle");
+            const displayName = driver.name || "Driver Captain";
+            const displayEmail = driver.email || "captain@woxsen.edu.in";
+            const displayPhone = driver.phone || "Not linked";
+            const vehicleStr = `${driver.vehicle_type || "Vehicle"} • ${driver.vehicle_number || "TS09-CAMPUS"}`;
+            const driverIdStr = driver.id ? `WOX-DRV-${String(driver.id).padStart(4, '0')}` : "WOX-DRV-ACTIVE";
+
+            // Navbar & Header
             const headerNameEl = document.getElementById("driverHeaderName");
-            const toggle = document.getElementById("availabilityToggle");
+            if (headerNameEl) headerNameEl.textContent = displayName;
 
-            if (nameEl) nameEl.textContent = driver.name || "-";
-            if (headerNameEl) headerNameEl.textContent = driver.name || "Driver Portal";
-            if (emailEl) emailEl.textContent = driver.email || "-";
-            if (phoneEl) phoneEl.textContent = driver.phone || "-";
-            if (vehicleEl) vehicleEl.textContent = `${driver.vehicle_type || "-"} • ${driver.vehicle_number || "-"}`;
+            // Apple Profile Header
+            const profileFullNameEl = document.getElementById("driverProfileFullName");
+            const profileEmailEl = document.getElementById("driverProfileEmail");
+            const avatarInitialsEl = document.getElementById("driverAvatarInitials");
 
+            if (profileFullNameEl) profileFullNameEl.textContent = displayName;
+            if (profileEmailEl) profileEmailEl.textContent = displayEmail;
+
+            if (avatarInitialsEl) {
+                const initials = displayName
+                    .split(" ")
+                    .map(n => n[0])
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase() || "CP";
+                avatarInitialsEl.textContent = initials;
+            }
+
+            // Apple Wallet Pass elements
+            const cardHolderEl = document.getElementById("driverCardHolderName");
+            const cardVehicleEl = document.getElementById("driverCardVehicle");
+            const cardIdEl = document.getElementById("driverCardId");
+            const cardStatusEl = document.getElementById("driverCardStatus");
+
+            if (cardHolderEl) cardHolderEl.textContent = displayName;
+            if (cardVehicleEl) cardVehicleEl.textContent = vehicleStr;
+            if (cardIdEl) cardIdEl.textContent = driverIdStr;
+            if (cardStatusEl) {
+                cardStatusEl.textContent = driver.is_available ? "● Available (Online)" : "● Offline";
+                cardStatusEl.style.color = driver.is_available ? "#30D158" : "#FF453A";
+            }
+
+            // iOS Inset Grouped Settings Rows
+            const detailNameEl = document.getElementById("driverDetailName");
+            const detailEmailEl = document.getElementById("driverDetailEmail");
+            const detailPhoneEl = document.getElementById("driverDetailPhone");
+            const detailVehicleNumEl = document.getElementById("driverDetailVehicleNum");
+            const detailVehicleTypeEl = document.getElementById("driverDetailVehicleType");
+            const detailJoinedEl = document.getElementById("driverDetailJoined");
+
+            if (detailNameEl) detailNameEl.textContent = displayName;
+            if (detailEmailEl) detailEmailEl.textContent = displayEmail;
+            if (detailPhoneEl) detailPhoneEl.textContent = displayPhone;
+            if (detailVehicleNumEl) detailVehicleNumEl.textContent = driver.vehicle_number || "Not assigned";
+            if (detailVehicleTypeEl) detailVehicleTypeEl.textContent = driver.vehicle_type || "Standard Vehicle";
+            if (detailJoinedEl) {
+                detailJoinedEl.textContent = driver.created_at ? formatDateTime(driver.created_at) : "Active Academic Semester";
+            }
+
+            // Map & Online Switch
             if (driver.latitude && driver.longitude) {
                 currentDriverLat = driver.latitude;
                 currentDriverLng = driver.longitude;
                 updateDriverMapMarker(currentDriverLat, currentDriverLng);
             }
 
+            const toggle = document.getElementById("availabilityToggle");
             if (toggle) {
                 toggle.checked = Boolean(driver.is_available);
                 updateAvailabilityText(Boolean(driver.is_available));
             }
 
+            // Compute driver stats (completed trips and earnings)
+            try {
+                const historyData = await apiRequest(`${API_URL}/driver/rides/history`);
+                const rides = historyData.rides || [];
+                const completedRides = rides.filter(r => r.status === "COMPLETED");
+                const completedCount = completedRides.length;
+                const totalEarnings = completedCount * 20; // flat ₹20 fare per trip
+
+                const totalTripsEl = document.getElementById("driverTotalTrips");
+                const totalEarningsEl = document.getElementById("driverTotalEarnings");
+
+                if (totalTripsEl) totalTripsEl.textContent = completedCount;
+                if (totalEarningsEl) totalEarningsEl.textContent = `₹${totalEarnings}`;
+            } catch (err) {
+                console.warn("Could not load driver earnings stats:", err);
+            }
+
+            if (showToast) {
+                toast("Driver Captain profile synced!", "success");
+            }
+
         } catch (error) {
             console.error("Profile error:", error);
-            toast("Failed to load driver profile", "error");
+            if (showToast) toast("Failed to load driver profile", "error");
         }
     }
 
@@ -90,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const text = document.getElementById("availabilityText");
         if (!text) return;
         text.textContent = isAvailable ? "Online (Available)" : "Offline (Unavailable)";
-        text.style.color = isAvailable ? "#10b981" : "#ef4444";
+        text.style.color = isAvailable ? "#34C759" : "#FF3B30";
     }
 
     async function updateAvailability(isAvailable) {
@@ -201,16 +271,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (currentActiveRide) {
                 await sendDriverLocationUpdate(currentActiveRide.id || currentActiveRide.ride_id, currentDriverLat, currentDriverLng, false);
-            } else {
-                toast(`Driver Location set to ${currentDriverLat}, ${currentDriverLng}`, "info");
             }
         });
 
         document.getElementById("updateLocationBtn")?.addEventListener("click", () => {
             if (currentActiveRide) {
-                sendDriverLocationUpdate(currentActiveRide.id || currentActiveRide.ride_id, currentDriverLat, currentDriverLng, true);
-            } else {
-                toast("Location coordinates updated", "info");
+                sendDriverLocationUpdate(currentActiveRide.id || currentActiveRide.ride_id, currentDriverLat, currentDriverLng, false);
             }
         });
 
@@ -895,6 +961,11 @@ document.addEventListener("DOMContentLoaded", () => {
         box.appendChild(bubble);
         box.scrollTop = box.scrollHeight;
     }
+
+    // Expose helpers for tabs
+    window.loadDriverProfile = loadDriverProfile;
+    window.loadDriverHistory = loadDriverHistory;
+    window.loadCurrentTrip = loadCurrentTrip;
 
     initDriverMap();
     loadDriverProfile();

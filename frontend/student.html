@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard — Find My Ride (Woxsen University)</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=3.3.0">
     <link rel="icon" type="image/png" href="assets/logo-mark.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
@@ -19,18 +19,22 @@
             <span class="institutional-tag">Woxsen University</span>
         </a>
 
-        <!-- Clean Animated Tabs Hover Head Bar (Home, Rides, Safety, Support) -->
+        <!-- Clean Animated Tabs Hover Head Bar (Home, Rides, Profile, Safety, Support) -->
         <div class="animated-tabs-hover-wrapper">
             <div class="animated-tabs-container" id="studentNavTabs" aria-label="Student Navigation">
                 <button type="button" data-id="Home" class="nav-tab-btn active">Home</button>
                 <button type="button" data-id="Rides" class="nav-tab-btn">Rides</button>
+                <button type="button" data-id="Profile" class="nav-tab-btn">Profile</button>
                 <button type="button" data-id="Safety" class="nav-tab-btn">Safety</button>
                 <button type="button" data-id="Support" class="nav-tab-btn">Support</button>
             </div>
         </div>
 
         <div class="nav-actions">
-            <div class="user-badge" id="studentSessionBadge">
+            <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light / Dark Mode" id="themeToggleBtn">
+                🌙
+            </button>
+            <div class="user-badge" id="studentSessionBadge" onclick="switchStudentTab('Profile')" style="cursor: pointer;" title="View Student Profile">
                 <span id="studentUserEmail">hanuman@woxsen.edu.in</span>
                 <span class="kyc-pill">🛡️ KYC Verified</span>
             </div>
@@ -190,15 +194,27 @@
 
                     <!-- Interactive Visual Map Schematic -->
                     <div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                            <label style="margin: 0; font-weight:600;">Campus Map Schematic & Route Pins</label>
-                            <button id="toggleMapModeBtn" class="btn secondary small-button" type="button">Switch to Drop Pin</button>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                            <label style="margin: 0; font-weight: 600; color: var(--text-main);">Interactive Campus Map Pin Selector</label>
+                            
+                            <!-- Apple-style Segmented Pin Mode Selector (Pickup Pin & Drop Pin) -->
+                            <div class="apple-pin-segmented" style="display: inline-flex; background: var(--segmented-track-bg); border-radius: var(--radius-full); padding: 3px; gap: 4px;">
+                                <button type="button" id="btnPinPickup" class="apple-pin-tab active" onclick="setMapPinMode('pickup')" style="border: none; background: var(--bg-card); color: var(--text-main); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: var(--radius-full); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s ease;">
+                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #00C853;"></span>
+                                    <span>📍 Pickup Pin</span>
+                                </button>
+                                <button type="button" id="btnPinDrop" class="apple-pin-tab" onclick="setMapPinMode('drop')" style="border: none; background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: var(--radius-full); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0071E3;"></span>
+                                    <span>🏁 Drop Pin</span>
+                                </button>
+                            </div>
                         </div>
+
                         <div class="map-wrapper">
                             <div id="bookingMap" style="width: 100%; height: 390px; background: var(--bg-secondary); border-radius: var(--radius-sm);"></div>
                             <div class="map-overlay-info">
-                                <span>Active Setting Mode: <strong id="mapModeIndicator">Pickup Pin</strong></span>
-                                <small style="color: var(--text-muted); margin-left: 8px;">(Click map to adjust)</small>
+                                <span>Active Mode: <strong id="mapModeIndicator" style="color: #00C853;">Pickup Pin (Green)</strong></span>
+                                <small style="color: var(--text-muted); margin-left: 8px;">(Click anywhere on map to pin)</small>
                             </div>
                         </div>
                     </div>
@@ -255,7 +271,295 @@
         </div>
 
         <!-- ==============================================
-             MODULE TAB 3: SAFETY (CAMPUS PROTOCOLS & SOS)
+             MODULE TAB 3: STUDENT PROFILE (APPLE ID & TRANSIT PASS)
+             ============================================== -->
+        <div id="student-tab-profile" class="student-tab-pane">
+
+            <!-- 1. Apple ID Centered Profile Header -->
+            <div class="apple-profile-header">
+                <div class="apple-avatar-wrap">
+                    <div class="apple-avatar-circle" id="profileAvatarCircle">
+                        <span id="profileAvatarInitials">ST</span>
+                    </div>
+                </div>
+                <h1 class="apple-profile-name" id="profileFullName">Loading Student...</h1>
+                <p class="apple-profile-email" id="profileEmail">student@woxsen.edu.in</p>
+                <div class="apple-account-badge">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#0071E3" style="flex-shrink:0;">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span>Apple ID &amp; Woxsen University Account</span>
+                </div>
+            </div>
+
+            <!-- 2. Apple Wallet Style Campus Transit Card -->
+            <div class="apple-wallet-section">
+                <div class="apple-transit-pass-card">
+                    <div class="apple-card-glow"></div>
+                    <div class="apple-card-top">
+                        <div class="apple-card-institution">
+                            <span class="apple-card-dot"></span>
+                            <span class="apple-card-school">WOXSEN UNIVERSITY</span>
+                        </div>
+                        <div class="apple-card-nfc" title="Express Campus Transit">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2a10 10 0 0 1 10 10M12 6a6 6 0 0 1 6 6M12 10a2 2 0 0 1 2 2"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="apple-card-middle">
+                        <div class="apple-card-chip"></div>
+                        <div class="apple-card-transit-type">Campus Transit Pass</div>
+                    </div>
+
+                    <div class="apple-card-bottom">
+                        <div>
+                            <div class="apple-card-label">CARDHOLDER</div>
+                            <div class="apple-card-val" id="profileCardHolderName">Woxsen Student</div>
+                        </div>
+                        <div>
+                            <div class="apple-card-label">STUDENT ID</div>
+                            <div class="apple-card-val" id="profileIdPill">WOX-STU-ACTIVE</div>
+                        </div>
+                        <div>
+                            <div class="apple-card-label">RATE TIER</div>
+                            <div class="apple-card-val">₹15–₹20 Flat</div>
+                        </div>
+                        <div>
+                            <div class="apple-card-label">STATUS</div>
+                            <div class="apple-card-val active-status">● Active</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. iOS-Style Inset Grouped Settings Grid -->
+            <div class="apple-settings-grid">
+                
+                <!-- Left Column: Personal Info & Pass Policies -->
+                <div class="apple-settings-col">
+                    
+                    <!-- Group 1: Personal Credentials -->
+                    <div class="apple-group-label">STUDENT CREDENTIALS</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-blue">
+                                👤
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Full Name</span>
+                                <span class="apple-row-value" id="profileDetailName">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-indigo">
+                                ✉️
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">University Email</span>
+                                <span class="apple-row-value highlight" id="profileDetailEmail">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-green">
+                                📞
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Phone Number</span>
+                                <span class="apple-row-value" id="profileDetailPhone">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-purple">
+                                🆔
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Account Role</span>
+                                <span class="apple-row-value">Verified Student Rider</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-orange">
+                                📅
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Member Since</span>
+                                <span class="apple-row-value" id="profileDetailJoined">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-emerald">
+                                🛡️
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Institutional KYC</span>
+                                <span class="apple-row-value verified-text">
+                                    ✓ Verified via Woxsen Mail
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Group 2: Campus Geofence & Transit Rules -->
+                    <div class="apple-group-label">CAMPUS TRANSIT BOUNDARIES</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-teal">
+                                📍
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Geofenced Perimeter</span>
+                                <span class="apple-row-value">Woxsen Campus (5 Zones)</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-yellow">
+                                🏷️
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Pricing Rule</span>
+                                <span class="apple-row-value">₹15 – ₹20 Flat Rate (Zero Surge)</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-blue">
+                                ⚡
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Operating Hours</span>
+                                <span class="apple-row-value">24/7 Peer Transit</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Trip Stats, Security & Actions -->
+                <div class="apple-settings-col">
+
+                    <!-- Group 3: Mobility Analytics -->
+                    <div class="apple-group-label">TRIP ANALYTICS &amp; METRICS</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-stats-strip">
+                            <div class="apple-stat-item">
+                                <div class="apple-stat-number" id="profileTotalTrips">0</div>
+                                <div class="apple-stat-sub">Campus Rides</div>
+                            </div>
+                            <div class="apple-stat-divider"></div>
+                            <div class="apple-stat-item">
+                                <div class="apple-stat-number" id="profileCompletedTrips">0</div>
+                                <div class="apple-stat-sub">Completed</div>
+                            </div>
+                            <div class="apple-stat-divider"></div>
+                            <div class="apple-stat-item">
+                                <div class="apple-stat-number" id="profileEstSavings">₹0</div>
+                                <div class="apple-stat-sub">Saved vs Cabs</div>
+                            </div>
+                        </div>
+
+                        <div class="apple-row-actions">
+                            <button type="button" class="btn primary small-button" style="flex:1;" onclick="switchStudentTab('Home')">
+                                🚗 Dispatch Ride
+                            </button>
+                            <button type="button" class="btn secondary small-button" style="flex:1;" onclick="switchStudentTab('Rides')">
+                                📜 Ride History
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Group 4: Campus Safety & Emergency Links -->
+                    <div class="apple-group-label">CAMPUS SAFETY &amp; DISPATCH</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-red">
+                                📞
+                            </div>
+                            <div class="apple-row-content">
+                                <div>
+                                    <span class="apple-row-label" style="display:block;">Main Gate Security</span>
+                                    <small style="color: var(--text-muted); font-size:11px;">Ext. 4040 • 24/7 Patrol</small>
+                                </div>
+                                <a href="tel:+914040404040" class="apple-action-pill">Call 4040</a>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-red">
+                                🚨
+                            </div>
+                            <div class="apple-row-content">
+                                <div>
+                                    <span class="apple-row-label" style="display:block;">Emergency Safety SOS</span>
+                                    <small style="color: var(--text-muted); font-size:11px;">1-Tap Live GPS Dispatch</small>
+                                </div>
+                                <button type="button" class="apple-action-pill danger" onclick="openSosModal()">SOS</button>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-orange">
+                                🚑
+                            </div>
+                            <div class="apple-row-content">
+                                <div>
+                                    <span class="apple-row-label" style="display:block;">Health Center Clinic</span>
+                                    <small style="color: var(--text-muted); font-size:11px;">Hostel Quad • Ambulance</small>
+                                </div>
+                                <a href="tel:+914040404041" class="apple-action-pill">Medical</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Group 5: Settings & Actions -->
+                    <div class="apple-group-label">ACCOUNT PREFERENCES</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-row apple-clickable-row" onclick="toggleTheme()">
+                            <div class="apple-row-icon icon-slate">
+                                🌓
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Appearance (Light / Dark)</span>
+                                <span class="apple-chevron">›</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row apple-clickable-row" onclick="loadStudentProfile(true)">
+                            <div class="apple-row-icon icon-blue">
+                                🔄
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Sync Account Credentials</span>
+                                <span class="apple-chevron">›</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row apple-clickable-row" onclick="logout()" style="cursor:pointer;">
+                            <div class="apple-row-icon icon-red">
+                                🚪
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label" style="color: var(--apple-red); font-weight:600;">Sign Out of Student Account</span>
+                                <span class="apple-chevron" style="color: var(--apple-red);">›</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ==============================================
+             MODULE TAB 4: SAFETY (CAMPUS PROTOCOLS & SOS)
              ============================================== -->
         <div id="student-tab-safety" class="student-tab-pane">
             <div class="page-section-header" style="margin-top: 10px;">
@@ -495,6 +799,14 @@
                 setTimeout(() => {
                     window.dispatchEvent(new Event('resize'));
                 }, 150);
+            } else if (tabId === 'Profile') {
+                if (typeof window.loadStudentProfile === 'function') {
+                    window.loadStudentProfile();
+                }
+            } else if (tabId === 'Rides') {
+                if (typeof window.loadRideHistory === 'function') {
+                    window.loadRideHistory();
+                }
             }
         }
 

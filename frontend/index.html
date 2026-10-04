@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Find My Ride — Fast, Safe Campus Mobility</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=3.3.0">
     <link rel="icon" type="image/png" href="assets/logo-mark.png">
 </head>
 
@@ -15,10 +15,13 @@
     <div class="city-map-overlay"></div>
 
     <!-- BRAND LOGO HEADER (NO NAVBAR / NO TABS) -->
-    <header class="portal-brand-header" style="width: 100%; max-width: 1200px; padding: 24px 24px 8px; display: flex; align-items: center; justify-content: flex-start;">
+    <header class="portal-brand-header" style="width: 100%; max-width: 1200px; padding: 24px 24px 8px; display: flex; align-items: center; justify-content: space-between;">
         <a href="index.html" class="brand-logo" title="Find My Ride" style="display: inline-flex; align-items: center; text-decoration: none;">
             <img src="assets/logo.png" alt="Find My Ride" class="brand-logo-img">
         </a>
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light / Dark Mode" id="themeToggleBtn">
+            🌙
+        </button>
     </header>
 
     <!-- MAIN INTERACTIVE CONTENT AREA: HERO CONTEXT BESIDE LOGIN CARD -->

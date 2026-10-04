@@ -111,6 +111,54 @@ function logout() {
   }, 400);
 }
 
+/* ============================================================
+   APPLE CUPERTINO THEME SYSTEM (LIGHT & DARK MODE)
+   ============================================================ */
+
+function getStoredTheme() {
+  const stored = localStorage.getItem('theme');
+  if (stored) return stored;
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  if (document.body) {
+    document.body.setAttribute('data-theme', theme);
+  }
+  localStorage.setItem('theme', theme);
+
+  // Update all theme toggle buttons across the page
+  const buttons = document.querySelectorAll('.theme-toggle-btn');
+  buttons.forEach(btn => {
+    btn.innerHTML = theme === 'dark' ? '☀️' : '🌙';
+    btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+    btn.setAttribute('title', theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+  });
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || getStoredTheme();
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+}
+
+// Immediately apply saved theme on load
+(function() {
+  const initialTheme = getStoredTheme();
+  document.documentElement.setAttribute('data-theme', initialTheme);
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+  const currentTheme = getStoredTheme();
+  applyTheme(currentTheme);
+});
+
 window.logout = logout;
 window.toast = toast;
 window.statusBadge = statusBadge;
+window.toggleTheme = toggleTheme;
+window.applyTheme = applyTheme;

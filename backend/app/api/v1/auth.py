@@ -65,5 +65,6 @@ def get_me(
         "id": current_student.id,
         "name": current_student.name,
         "email": current_student.email,
-        "phone": current_student.phone
+        "phone": current_student.phone,
+        "created_at": current_student.created_at.isoformat() if current_student.created_at else None
     }

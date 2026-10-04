@@ -4,55 +4,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Registration — Find My Ride</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Campus Registration — Find My Ride</title>
+    <link rel="stylesheet" href="css/style.css?v=3.3.0">
     <link rel="icon" type="image/png" href="assets/logo-mark.png">
 </head>
 
-<body>
+<body class="unified-portal-body">
+
+    <!-- High-Contrast Night City Vector Map Overlay -->
+    <div class="city-map-overlay"></div>
+
+    <div style="position: absolute; top: 24px; right: 24px; z-index: 20;">
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light / Dark Mode" id="themeToggleBtn">
+            🌙
+        </button>
+    </div>
 
     <div class="auth-container">
-        <div class="auth-card">
+        <div class="unified-auth-card auth-page-card" style="max-width: 480px;">
 
-            <div style="text-align: center; margin-bottom: 16px;">
-                <a href="index.html" title="Back to Home">
-                    <img src="assets/logo.png" alt="Find My Ride" style="height: 48px; width: auto; object-fit: contain;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <a href="index.html" title="Back to Home" style="display: inline-block;">
+                    <img src="assets/logo.png" alt="Find My Ride" class="brand-logo-img" style="margin: 0 auto;">
                 </a>
             </div>
-            <h2>Student Registration</h2>
-            <p class="subtitle">Create an account to start booking campus rides</p>
 
+            <!-- Segmented Role Controller (Student | Driver) -->
+            <div class="segmented-control-wrapper" id="regSegmentedTrack">
+                <div class="pill-highlight" id="regPillHighlight"></div>
+                <button type="button" class="role-btn active" id="btnRegStudent" onclick="switchRegisterRole('student')">
+                    Student
+                </button>
+                <button type="button" class="role-btn" id="btnRegDriver" onclick="switchRegisterRole('driver')">
+                    Driver
+                </button>
+            </div>
+
+            <div class="portal-card-header" style="text-align: center;">
+                <div class="hero-pill-badge" id="regBadgeEl" style="margin: 0 auto 12px; display: inline-flex;">
+                    <span class="dot-live" id="regBadgeDot"></span>
+                    <span id="regBadgeText">Woxsen Student Network</span>
+                </div>
+                <h2 id="regTitle">Student Registration</h2>
+                <p id="regSubtitle">Create an account to start booking campus rides</p>
+            </div>
+
+            <!-- STUDENT REGISTRATION FORM -->
             <form id="studentRegisterForm">
-                <div class="form-group">
+                <div class="form-group-uber">
                     <label for="name">Full Name</label>
-                    <input type="text" id="name" placeholder="John Doe" required autocomplete="name">
+                    <input type="text" id="name" class="input-uber" placeholder="John Doe" required autocomplete="name">
                 </div>
 
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" placeholder="john@woxsen.edu.in" required autocomplete="email">
+                <div class="form-group-uber">
+                    <label for="email">Campus Email</label>
+                    <input type="email" id="email" class="input-uber" placeholder="john@woxsen.edu.in" required autocomplete="email">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group-uber">
                     <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" placeholder="+91 9876543210" required autocomplete="tel">
+                    <input type="tel" id="phone" class="input-uber" placeholder="+91 9876543210" required autocomplete="tel">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group-uber">
                     <label for="password">Create Password</label>
-                    <input type="password" id="password" placeholder="Min. 6 characters" required autocomplete="new-password">
+                    <input type="password" id="password" class="input-uber" placeholder="Min. 6 characters" required autocomplete="new-password">
                 </div>
 
-                <button type="submit" style="margin-top: 10px;">
-                    Create Account
+                <button type="submit" class="btn-rapido">
+                    <span>Create Student Account</span>
+                    <span>→</span>
                 </button>
             </form>
 
-            <div id="message" style="margin-top: 15px; font-weight: 600; font-size: 14px; text-align: center;"></div>
+            <!-- DRIVER REGISTRATION FORM -->
+            <form id="driverRegisterForm" style="display: none;">
+                <div class="form-group-uber">
+                    <label for="driverName">Full Name</label>
+                    <input type="text" id="driverName" class="input-uber" placeholder="Driver / Captain Name" required autocomplete="name">
+                </div>
 
-            <div class="auth-links">
-                <p>Already registered? <a href="login.html">Login here</a></p>
-                <p><a href="index.html">← Back to Home</a></p>
+                <div class="form-group-uber">
+                    <label for="driverEmail">Campus / Personal Email</label>
+                    <input type="email" id="driverEmail" class="input-uber" placeholder="driver@campus.com" required autocomplete="email">
+                </div>
+
+                <div class="form-group-uber">
+                    <label for="driverPhone">Phone Number</label>
+                    <input type="tel" id="driverPhone" class="input-uber" placeholder="+91 9876543210" required autocomplete="tel">
+                </div>
+
+                <div class="form-group-uber">
+                    <label for="driverPassword">Create Password</label>
+                    <input type="password" id="driverPassword" class="input-uber" placeholder="Min. 6 characters" required autocomplete="new-password">
+                </div>
+
+                <div class="input-row">
+                    <div class="form-group-uber">
+                        <label for="vehicleNumber">Vehicle Number</label>
+                        <input type="text" id="vehicleNumber" class="input-uber" placeholder="TS09AB1234" required>
+                    </div>
+
+                    <div class="form-group-uber">
+                        <label for="vehicleType">Vehicle Type</label>
+                        <select id="vehicleType" class="input-uber" required>
+                            <option value="">Select Type</option>
+                            <option value="Car">Electric Shuttle / Car</option>
+                            <option value="Auto / Rickshaw">Auto / Rickshaw</option>
+                            <option value="Bike / Scooter">Bike / Scooter</option>
+                            <option value="Cab / SUV">Cab / SUV</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-rapido">
+                    <span>Register as Campus Driver</span>
+                    <span>→</span>
+                </button>
+            </form>
+
+            <div id="message" class="form-status-msg"></div>
+            <div id="driverMessage" class="form-status-msg"></div>
+
+            <div class="portal-card-footer">
+                <p id="regLoginLink">Already registered? <a href="index.html?role=student">Sign In here</a></p>
+                <p style="margin-top: 8px;"><a href="index.html">← Back to Home</a></p>
             </div>
 
         </div>

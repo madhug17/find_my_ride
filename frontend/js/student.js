@@ -94,13 +94,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     document.getElementById("pickup_lat").value = loc.lat;
                     document.getElementById("pickup_lng").value = loc.lng;
                     updateBookingMapMarker('pickup', loc.lat, loc.lng);
-                    toast(`Set Pickup to ${loc.name}`, "info");
                 } else {
                     document.getElementById("drop_loc").value = loc.name;
                     document.getElementById("drop_lat").value = loc.lat;
                     document.getElementById("drop_lng").value = loc.lng;
                     updateBookingMapMarker('drop', loc.lat, loc.lng);
-                    toast(`Set Drop to ${loc.name}`, "info");
                 }
                 updateEstimates();
             });
@@ -115,7 +113,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!silent) toast("GPS Geolocation is not supported by your browser.", "error");
             return;
         }
-        if (!silent) toast("Locating your physical GPS position...", "info");
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -137,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     updateBookingMapMarker('pickup', lat, lng);
                 }
                 updateEstimates();
-                if (!silent) toast("Located at your real GPS position!", "success");
             },
             (error) => {
                 console.warn("GPS Geolocation error:", error);
@@ -146,6 +142,37 @@ document.addEventListener("DOMContentLoaded", () => {
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     }
+
+    function setMapPinMode(mode) {
+        activeMapMode = mode === 'drop' ? 'drop' : 'pickup';
+        const indicator = document.getElementById("mapModeIndicator");
+        if (indicator) {
+            indicator.textContent = activeMapMode === 'pickup' ? 'Pickup Pin (Green)' : 'Drop Pin (Blue)';
+            indicator.style.color = activeMapMode === 'pickup' ? '#00C853' : '#0071E3';
+        }
+
+        const btnPickup = document.getElementById("btnPinPickup");
+        const btnDrop = document.getElementById("btnPinDrop");
+
+        if (btnPickup && btnDrop) {
+            if (activeMapMode === 'pickup') {
+                btnPickup.style.background = "var(--bg-card)";
+                btnPickup.style.color = "var(--text-main)";
+                btnPickup.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+                btnDrop.style.background = "transparent";
+                btnDrop.style.color = "var(--text-muted)";
+                btnDrop.style.boxShadow = "none";
+            } else {
+                btnDrop.style.background = "var(--bg-card)";
+                btnDrop.style.color = "var(--text-main)";
+                btnDrop.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+                btnPickup.style.background = "transparent";
+                btnPickup.style.color = "var(--text-muted)";
+                btnPickup.style.boxShadow = "none";
+            }
+        }
+    }
+    window.setMapPinMode = setMapPinMode;
 
     function initBookingMap() {
         const mapEl = document.getElementById("bookingMap");
@@ -202,18 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             updateEstimates();
         });
-
-        // Toggle Map Mode Button
-        const toggleBtn = document.getElementById("toggleMapModeBtn");
-        if (toggleBtn) {
-            toggleBtn.addEventListener("click", () => {
-                activeMapMode = activeMapMode === 'pickup' ? 'drop' : 'pickup';
-                document.getElementById("mapModeIndicator").textContent = 
-                    activeMapMode === 'pickup' ? 'Pickup Pin' : 'Drop Pin';
-                toggleBtn.textContent = 
-                    activeMapMode === 'pickup' ? 'Switch to Drop Pin' : 'Switch to Pickup Pin';
-            });
-        }
 
         // Live input change listeners
         ['pickup_lat', 'pickup_lng', 'drop_lat', 'drop_lng'].forEach(id => {
@@ -906,12 +921,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("refreshHistoryBtn")?.addEventListener("click", () => {
         loadRideHistory();
-        toast("History refreshed", "info");
     });
 
     document.getElementById("refreshCurrentBtn")?.addEventListener("click", () => {
         loadCurrentRide();
-        toast("Status refreshed", "info");
     });
 
     // =========================================================
@@ -1141,15 +1154,124 @@ document.addEventListener("DOMContentLoaded", () => {
         box.scrollTop = box.scrollHeight;
     }
 
+    // =========================================================
+    // STUDENT PROFILE & DETAILS LOADER
+    // =========================================================
+    async function loadStudentProfile(showToast = false) {
+        if (!isAuthenticated) {
+            const profileFullNameEl = document.getElementById("profileFullName");
+            if (profileFullNameEl) profileFullNameEl.textContent = "Guest Student (Explore Mode)";
+            const profileEmailEl = document.getElementById("profileEmail");
+            if (profileEmailEl) profileEmailEl.textContent = "Please login to view institutional credentials";
+            const profileDetailNameEl = document.getElementById("profileDetailName");
+            if (profileDetailNameEl) profileDetailNameEl.textContent = "Guest";
+            const profileDetailEmailEl = document.getElementById("profileDetailEmail");
+            if (profileDetailEmailEl) profileDetailEmailEl.textContent = "guest@woxsen.edu.in";
+            return;
+        }
+
+        try {
+            // Fetch student auth record from backend
+            const meRes = await fetch(`${API_URL}/auth/me`, {
+                headers: authHeaders
+            });
+            if (meRes.ok) {
+                const me = await meRes.json();
+                
+                // Store/sync email & name
+                if (me.email) localStorage.setItem("user_email", me.email);
+                if (me.name) localStorage.setItem("user_name", me.name);
+
+                // Update Navbar email
+                if (studentUserEmailEl) {
+                    studentUserEmailEl.textContent = me.email || "Student Portal";
+                }
+
+                // Profile hero card elements
+                const nameEl = document.getElementById("profileFullName");
+                const emailEl = document.getElementById("profileEmail");
+                const idPillEl = document.getElementById("profileIdPill");
+                const avatarInitialsEl = document.getElementById("profileAvatarInitials");
+
+                const detailNameEl = document.getElementById("profileDetailName");
+                const detailEmailEl = document.getElementById("profileDetailEmail");
+                const detailPhoneEl = document.getElementById("profileDetailPhone");
+                const detailJoinedEl = document.getElementById("profileDetailJoined");
+
+                const displayName = me.name || "Woxsen Student";
+                const displayEmail = me.email || userEmail || "student@woxsen.edu.in";
+                const displayPhone = me.phone || "Not linked";
+                const studentIdStr = me.id ? `WOX-STU-${String(me.id).padStart(4, '0')}` : "WOX-STU-ACTIVE";
+
+                const cardHolderNameEl = document.getElementById("profileCardHolderName");
+                if (cardHolderNameEl) cardHolderNameEl.textContent = displayName;
+
+                if (nameEl) nameEl.textContent = displayName;
+                if (emailEl) emailEl.textContent = displayEmail;
+                if (idPillEl) idPillEl.textContent = studentIdStr;
+                
+                // Generate Monogram Initials (e.g. "MG" or "ST")
+                if (avatarInitialsEl) {
+                    const initials = displayName
+                        .split(" ")
+                        .map(n => n[0])
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase() || "ST";
+                    avatarInitialsEl.textContent = initials;
+                }
+
+                if (detailNameEl) detailNameEl.textContent = displayName;
+                if (detailEmailEl) detailEmailEl.textContent = displayEmail;
+                if (detailPhoneEl) detailPhoneEl.textContent = displayPhone;
+                if (detailJoinedEl) {
+                    detailJoinedEl.textContent = me.created_at ? formatDateTime(me.created_at) : "Active Academic Year";
+                }
+            }
+
+            // Also compute trip stats for the student profile
+            const ridesRes = await fetch(`${API_URL}/rides/history`, {
+                headers: authHeaders
+            });
+            if (ridesRes.ok) {
+                const result = await ridesRes.json();
+                const rides = Array.isArray(result) ? result : (result.rides || []);
+                const totalRides = rides.length;
+                const completedRides = rides.filter(r => r.status === "COMPLETED").length;
+                
+                // Estimated campus transit savings vs commercial cab fare
+                const estSavings = completedRides * 35; // ₹50 commercial auto - ₹15 student ride = ₹35 saved per trip
+
+                const totalTripsEl = document.getElementById("profileTotalTrips");
+                const completedTripsEl = document.getElementById("profileCompletedTrips");
+                const estSavingsEl = document.getElementById("profileEstSavings");
+
+                if (totalTripsEl) totalTripsEl.textContent = totalRides;
+                if (completedTripsEl) completedTripsEl.textContent = completedRides;
+                if (estSavingsEl) estSavingsEl.textContent = `₹${estSavings}`;
+            }
+
+            if (showToast) {
+                toast("Profile & KYC details refreshed!", "success");
+            }
+        } catch (err) {
+            console.warn("Error loading student profile:", err);
+            if (showToast) toast("Failed to refresh profile data", "error");
+        }
+    }
+
     // Expose helpers
     window.loadCurrentRide = loadCurrentRide;
     window.loadRideHistory = loadRideHistory;
+    window.loadStudentProfile = loadStudentProfile;
 
     // INITIALIZATION
     initCampusPresets();
     initBookingMap();
     loadCurrentRide();
     loadRideHistory();
+    loadStudentProfile();
 
     // Auto-poll active ride every 4 seconds to sync status, OTP and driver arrival
     setInterval(() => {

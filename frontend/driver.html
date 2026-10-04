@@ -4,34 +4,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver Dashboard — Find My Ride</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Driver Dashboard — Find My Ride (Woxsen University)</title>
+    <link rel="stylesheet" href="css/style.css?v=3.3.0">
     <link rel="icon" type="image/png" href="assets/logo-mark.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 
 <body>
 
-    <!-- NAVBAR WITH ANIMATED HOVER TABS -->
+    <!-- 1. TOP NAVBAR WITH APPLE ANIMATED HOVER TABS -->
     <nav class="navbar">
         <a href="driver.html" class="logo" style="display: inline-flex; align-items: center; gap: 12px; text-decoration: none;">
             <img src="assets/logo.png" alt="Find My Ride Driver" class="nav-logo-img">
-            <span class="institutional-tag" style="background: rgba(0, 200, 83, 0.1); color: #00C853; border: 1px solid rgba(0, 200, 83, 0.3);">Driver Portal</span>
+            <span class="institutional-tag" style="background: rgba(0, 200, 83, 0.1); color: #00C853; border: 1px solid rgba(0, 200, 83, 0.3);">Driver Captain Portal</span>
         </a>
 
-        <!-- Animated Tabs Hover Head Bar (Home, About, Services, Contact) -->
+        <!-- Animated Tabs Hover Head Bar (Home, Rides, Profile, Safety, Support) -->
         <div class="animated-tabs-hover-wrapper">
             <div class="animated-tabs-container" id="driverNavTabs" aria-label="Driver Navigation">
                 <button type="button" data-id="Home" class="nav-tab-btn active">Home</button>
-                <button type="button" data-id="About" class="nav-tab-btn">About</button>
-                <button type="button" data-id="Services" class="nav-tab-btn">Services</button>
-                <button type="button" data-id="Contact" class="nav-tab-btn">Contact</button>
+                <button type="button" data-id="Rides" class="nav-tab-btn">Rides</button>
+                <button type="button" data-id="Profile" class="nav-tab-btn">Profile</button>
+                <button type="button" data-id="Safety" class="nav-tab-btn">Safety</button>
+                <button type="button" data-id="Support" class="nav-tab-btn">Support</button>
             </div>
         </div>
 
         <div class="nav-actions">
-            <div class="user-badge">
+            <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light / Dark Mode" id="themeToggleBtn">
+                🌙
+            </button>
+            <div class="user-badge" id="driverSessionBadge" onclick="switchDriverTab('Profile')" style="cursor: pointer;" title="View Driver Captain Profile">
                 <span id="driverHeaderName">Driver Portal</span>
+                <span class="kyc-pill">🛡️ Captain Verified</span>
             </div>
             <button class="btn danger small-button" onclick="logout()">
                 Logout
@@ -43,17 +48,18 @@
     <main class="dashboard-container">
 
         <!-- ==============================================
-             1. HOME TAB PANE (DRIVER CONTROL CENTER)
+             1. HOME TAB PANE (DRIVER CONTROL CENTER & MAP)
              ============================================== -->
         <div id="driver-tab-home" class="driver-tab-pane active">
 
             <div class="dashboard-header">
                 <div>
-                    <h1>Driver Control Center</h1>
-                    <p style="color: var(--text-muted);">Manage availability, accept ride requests, and navigate campus live.</p>
+                    <span class="section-tag" style="display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent-primary); background:rgba(0,200,83,0.12); padding:4px 10px; border-radius:var(--radius-full); margin-bottom:8px;">Campus Dispatch</span>
+                    <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-top: 4px;">Driver Control Center</h1>
+                    <p style="color: var(--text-muted); font-size: 14px;">Manage availability, accept student ride requests, and navigate campus live.</p>
                 </div>
 
-                <!-- Availability Toggle Switch -->
+                <!-- Availability Toggle Switch (Apple iOS Switch) -->
                 <div class="dashboard-card" style="margin-bottom: 0; padding: 14px 24px;">
                     <label class="switch-label">
                         <span>Driver Online Status:</span>
@@ -61,66 +67,41 @@
                             <input type="checkbox" id="availabilityToggle">
                             <span class="slider"></span>
                         </label>
-                        <strong id="availabilityText" style="color: #ef4444;">Offline</strong>
+                        <strong id="availabilityText" style="color: var(--apple-red);">Offline</strong>
                     </label>
                 </div>
             </div>
 
-            <div class="input-row" style="grid-template-columns: 1fr 1fr; gap: 25px;">
-
-                <!-- DRIVER PROFILE CARD -->
-                <section class="dashboard-card" style="margin-bottom: 0;">
-                    <div class="section-header">
-                        <h2>Driver Profile</h2>
-                        <span class="status-badge badge-accepted">Verified Driver</span>
-                    </div>
-
-                    <div class="profile-grid">
-                        <div class="profile-stat">
-                            <strong>Driver Name</strong>
-                            <p id="driverName">Loading...</p>
-                        </div>
-                        <div class="profile-stat">
-                            <strong>Email Address</strong>
-                            <p id="driverEmail">Loading...</p>
-                        </div>
-                        <div class="profile-stat">
-                            <strong>Phone</strong>
-                            <p id="driverPhone">Loading...</p>
-                        </div>
-                        <div class="profile-stat">
-                            <strong>Vehicle Info</strong>
-                            <p id="driverVehicle">Loading...</p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- CURRENT ACTIVE RIDE CARD -->
-                <section class="dashboard-card" style="margin-bottom: 0;">
-                    <div class="section-header">
+            <!-- CURRENT ACTIVE RIDE CARD -->
+            <section class="dashboard-card" style="margin-top: 10px;">
+                <div class="section-header">
+                    <div>
                         <h2>Current Active Trip</h2>
-                        <button id="refreshCurrentRideBtn" class="btn secondary small-button">
-                            Refresh
-                        </button>
+                        <span class="subtitle">Live status, student details, OTP verification &amp; chat</span>
                     </div>
+                    <button id="refreshCurrentRideBtn" class="btn secondary small-button">
+                        Refresh Trip
+                    </button>
+                </div>
 
-                    <div id="driverCurrentRide">
-                        <div class="empty-state">
-                            <h3>No Active Trip</h3>
-                            <p>Set status to <strong>Online</strong> and accept a ride request below.</p>
-                        </div>
+                <div id="driverCurrentRide">
+                    <div class="empty-state">
+                        <h3>No Active Trip</h3>
+                        <p>Set status to <strong>Online</strong> and accept a ride request below.</p>
                     </div>
-                </section>
-
-            </div>
+                </div>
+            </section>
 
             <!-- DRIVER MAP & NAVIGATION -->
             <section class="dashboard-card" style="margin-top: 25px;">
                 <div class="section-header">
-                    <h2>Live Campus Driver Map</h2>
-                    <div style="display: flex; gap: 10px; align-items: center;">
+                    <div>
+                        <h2>Live Campus Driver Telemetry</h2>
+                        <span class="subtitle">Real-time GPS positioning &amp; passenger pickup navigation</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <span style="font-size: 13px; color: var(--text-muted);">Current Coords: <strong id="driverCoordText">17.5454, 78.5718</strong></span>
-                        <button id="useGpsBtnDriver" class="btn secondary small-button" style="background: rgba(0, 200, 83, 0.1); border-color: var(--accent-primary); color: var(--text-main);">Use GPS Position</button>
+                        <button id="useGpsBtnDriver" class="btn secondary small-button" style="background: rgba(0, 200, 83, 0.1); border-color: var(--accent-primary); color: var(--text-main);">📍 Use GPS Position</button>
                         <button id="updateLocationBtn" class="btn secondary small-button">Set Location Here</button>
                     </div>
                 </div>
@@ -136,13 +117,16 @@
             <!-- AVAILABLE RIDE REQUESTS & NEARBY SEARCH -->
             <section class="dashboard-card">
                 <div class="section-header">
-                    <h2>Ride Requests & Nearby Rides</h2>
+                    <div>
+                        <h2>Available Student Ride Requests</h2>
+                        <span class="subtitle">Accept nearby student pickup requests within campus perimeter</span>
+                    </div>
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <label style="margin: 0; font-size: 13px;">Radius:</label>
                         <input type="number" id="radiusKm" value="5" min="1" max="50" style="width: 80px; padding: 6px 10px;">
                         <span style="font-size: 13px; color: var(--text-muted);">km</span>
                         <button id="findNearbyBtn" class="btn secondary small-button">Search Nearby</button>
-                        <button id="refreshAvailableBtn" class="btn secondary small-button">Refresh All</button>
+                        <button id="refreshAvailableBtn" class="btn secondary small-button">Refresh Requests</button>
                     </div>
                 </div>
 
@@ -153,10 +137,27 @@
                 </div>
             </section>
 
+        </div>
+
+        <!-- ==============================================
+             2. RIDES TAB PANE (DRIVER TRIP HISTORY)
+             ============================================== -->
+        <div id="driver-tab-rides" class="driver-tab-pane">
+            <div class="dashboard-header" style="margin-bottom: 20px;">
+                <div>
+                    <span class="section-tag" style="display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--apple-blue); background:rgba(0,113,227,0.12); padding:4px 10px; border-radius:var(--radius-full); margin-bottom:8px;">Trip History</span>
+                    <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-top: 4px;">Completed Trips &amp; Statements</h1>
+                    <p style="color: var(--text-muted); font-size: 14px;">Historical passenger trips, completed rides, and fare settlements.</p>
+                </div>
+                <button id="refreshDriverHistoryBtn" class="btn secondary small-button" onclick="loadDriverHistory()">
+                    Refresh Trips
+                </button>
+            </div>
+
             <!-- PREVIOUS RIDES HISTORY -->
             <section class="dashboard-card">
                 <div class="section-header">
-                    <h2>Driver History</h2>
+                    <h2>Past Campus Trips</h2>
                 </div>
                 <div id="driverHistory">
                     <div class="empty-state">
@@ -164,16 +165,313 @@
                     </div>
                 </div>
             </section>
+        </div>
+
+        <!-- ==============================================
+             3. PROFILE TAB PANE (APPLE ID & DRIVER CAPTAIN PASS)
+             ============================================== -->
+        <div id="driver-tab-profile" class="driver-tab-pane">
+
+            <!-- 1. Apple ID Centered Driver Header -->
+            <div class="apple-profile-header">
+                <div class="apple-avatar-wrap">
+                    <div class="apple-avatar-circle" id="driverAvatarCircle">
+                        <span id="driverAvatarInitials">CP</span>
+                    </div>
+                </div>
+                <h1 class="apple-profile-name" id="driverProfileFullName">Loading Driver Captain...</h1>
+                <p class="apple-profile-email" id="driverProfileEmail">captain@woxsen.edu.in</p>
+                <div class="apple-account-badge">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#0071E3" style="flex-shrink:0;">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span>Apple ID &amp; Woxsen University Captain Account</span>
+                </div>
+            </div>
+
+            <!-- 2. Apple Wallet Style Campus Driver Captain Pass -->
+            <div class="apple-wallet-section">
+                <div class="apple-transit-pass-card">
+                    <div class="apple-card-glow"></div>
+                    <div class="apple-card-top">
+                        <div class="apple-card-institution">
+                            <span class="apple-card-dot"></span>
+                            <span class="apple-card-school">WOXSEN UNIVERSITY</span>
+                        </div>
+                        <div class="apple-card-nfc" title="Express Campus Transit Captain">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2a10 10 0 0 1 10 10M12 6a6 6 0 0 1 6 6M12 10a2 2 0 0 1 2 2"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="apple-card-middle">
+                        <div class="apple-card-chip"></div>
+                        <div class="apple-card-transit-type">Campus Driver Captain Pass</div>
+                    </div>
+
+                    <div class="apple-card-bottom">
+                        <div>
+                            <div class="apple-card-label">CAPTAIN</div>
+                            <div class="apple-card-val" id="driverCardHolderName">Driver Captain</div>
+                        </div>
+                        <div>
+                            <div class="apple-card-label">VEHICLE</div>
+                            <div class="apple-card-val" id="driverCardVehicle">Car • TS09GH1234</div>
+                        </div>
+                        <div>
+                            <div class="apple-card-label">CAPTAIN ID</div>
+                            <div class="apple-card-val" id="driverCardId">WOX-DRV-ACTIVE</div>
+                        </div>
+                        <div>
+                            <div class="apple-card-label">STATUS</div>
+                            <div class="apple-card-val active-status" id="driverCardStatus">● Available</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. iOS-Style Inset Grouped Settings Grid -->
+            <div class="apple-settings-grid">
+                
+                <!-- Left Column: Driver Credentials & Permits -->
+                <div class="apple-settings-col">
+                    
+                    <!-- Group 1: Personal & Captain Credentials -->
+                    <div class="apple-group-label">CAPTAIN CREDENTIALS</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-blue">
+                                👤
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Full Name</span>
+                                <span class="apple-row-value" id="driverDetailName">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-indigo">
+                                ✉️
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">University Email</span>
+                                <span class="apple-row-value highlight" id="driverDetailEmail">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-green">
+                                📞
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Phone Number</span>
+                                <span class="apple-row-value" id="driverDetailPhone">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-purple">
+                                🚗
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Vehicle Registration</span>
+                                <span class="apple-row-value" id="driverDetailVehicleNum">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-teal">
+                                🚙
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Vehicle Type</span>
+                                <span class="apple-row-value" id="driverDetailVehicleType">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-orange">
+                                📅
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Member Since</span>
+                                <span class="apple-row-value" id="driverDetailJoined">—</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-emerald">
+                                🛡️
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Institutional KYC</span>
+                                <span class="apple-row-value verified-text">
+                                    ✓ Verified Campus Captain
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Group 2: Campus Permits & Safety Bounds -->
+                    <div class="apple-group-label">CAMPUS TRANSIT PERMITS</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-teal">
+                                📍
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Authorized Perimeter</span>
+                                <span class="apple-row-value">Woxsen Campus (5 Zones)</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-yellow">
+                                ⚡
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Campus Speed Limit</span>
+                                <span class="apple-row-value">20 km/h (Hostel &amp; Library)</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-emerald">
+                                💰
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Fare Payout Rate</span>
+                                <span class="apple-row-value">₹15 – ₹20 Flat (100% Direct)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Performance, Fleet & Actions -->
+                <div class="apple-settings-col">
+
+                    <!-- Group 3: Mobility Analytics & Earnings -->
+                    <div class="apple-group-label">CAPTAIN PERFORMANCE &amp; METRICS</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-stats-strip">
+                            <div class="apple-stat-item">
+                                <div class="apple-stat-number" id="driverTotalTrips">0</div>
+                                <div class="apple-stat-sub">Completed Trips</div>
+                            </div>
+                            <div class="apple-stat-divider"></div>
+                            <div class="apple-stat-item">
+                                <div class="apple-stat-number" id="driverTotalEarnings">₹0</div>
+                                <div class="apple-stat-sub">Total Earnings</div>
+                            </div>
+                            <div class="apple-stat-divider"></div>
+                            <div class="apple-stat-item">
+                                <div class="apple-stat-number">5.0 ★</div>
+                                <div class="apple-stat-sub">Captain Rating</div>
+                            </div>
+                        </div>
+
+                        <div class="apple-row-actions">
+                            <button type="button" class="btn primary small-button" style="flex:1;" onclick="switchDriverTab('Home')">
+                                🎛️ Driver Console
+                            </button>
+                            <button type="button" class="btn secondary small-button" style="flex:1;" onclick="switchDriverTab('Rides')">
+                                📜 Trip History
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Group 4: Campus Fleet & Dispatch Desk -->
+                    <div class="apple-group-label">CAMPUS FLEET &amp; DISPATCH</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-blue">
+                                🏢
+                            </div>
+                            <div class="apple-row-content">
+                                <div>
+                                    <span class="apple-row-label" style="display:block;">Central Dispatch Desk</span>
+                                    <small style="color: var(--text-muted); font-size:11px;">Admin Ground Floor • Hub</small>
+                                </div>
+                                <a href="tel:+914040404040" class="apple-action-pill">Call 4040</a>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-red">
+                                🚨
+                            </div>
+                            <div class="apple-row-content">
+                                <div>
+                                    <span class="apple-row-label" style="display:block;">Security Emergency Radio</span>
+                                    <small style="color: var(--text-muted); font-size:11px;">Main Gate Security Rapid Unit</small>
+                                </div>
+                                <a href="tel:+914040404040" class="apple-action-pill danger">Emergency</a>
+                            </div>
+                        </div>
+
+                        <div class="apple-row">
+                            <div class="apple-row-icon icon-orange">
+                                🔋
+                            </div>
+                            <div class="apple-row-content">
+                                <div>
+                                    <span class="apple-row-label" style="display:block;">Charging &amp; Maintenance</span>
+                                    <small style="color: var(--text-muted); font-size:11px;">Transit Fleet Charging Station</small>
+                                </div>
+                                <a href="mailto:driver-support@woxsen.edu.in" class="apple-action-pill">Support</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Group 5: Settings & Actions -->
+                    <div class="apple-group-label">ACCOUNT PREFERENCES</div>
+                    <div class="apple-inset-group">
+                        <div class="apple-row apple-clickable-row" onclick="toggleTheme()">
+                            <div class="apple-row-icon icon-slate">
+                                🌓
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Appearance (Light / Dark)</span>
+                                <span class="apple-chevron">›</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row apple-clickable-row" onclick="loadDriverProfile(true)">
+                            <div class="apple-row-icon icon-blue">
+                                🔄
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label">Sync Captain Credentials</span>
+                                <span class="apple-chevron">›</span>
+                            </div>
+                        </div>
+
+                        <div class="apple-row apple-clickable-row" onclick="logout()" style="cursor:pointer;">
+                            <div class="apple-row-icon icon-red">
+                                🚪
+                            </div>
+                            <div class="apple-row-content">
+                                <span class="apple-row-label" style="color: var(--apple-red); font-weight:600;">Sign Out of Driver Account</span>
+                                <span class="apple-chevron" style="color: var(--apple-red);">›</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
 
         <!-- ==============================================
-             2. ABOUT TAB PANE (DRIVER STANDARDS)
+             4. SAFETY TAB PANE (DRIVER STANDARDS & SPEED LIMITS)
              ============================================== -->
-        <div id="driver-tab-about" class="driver-tab-pane">
+        <div id="driver-tab-safety" class="driver-tab-pane">
             <div class="page-section-header" style="margin-top: 10px;">
                 <span class="section-tag">Driver Standards</span>
-                <h2>Safe & Compliant Campus Driving</h2>
+                <h2>Safe &amp; Compliant Campus Driving</h2>
                 <p>Learn more about campus speed limits, passenger safety policies, and vehicle inspection standards.</p>
             </div>
 
@@ -202,45 +500,9 @@
         </div>
 
         <!-- ==============================================
-             3. SERVICES TAB PANE (TRANSIT FLEET)
+             5. SUPPORT TAB PANE (DISPATCH DESK & MAINTENANCE)
              ============================================== -->
-        <div id="driver-tab-services" class="driver-tab-pane">
-            <div class="page-section-header" style="margin-top: 10px;">
-                <span class="section-tag">Transit Network</span>
-                <h2>Campus Fleet Services</h2>
-                <p>Overview of campus mobility channels and driver partner support.</p>
-            </div>
-
-            <div class="cards-feature-grid">
-                <div class="feature-glass-card">
-                    <div class="feature-card-icon">🚗</div>
-                    <span class="card-badge">Daily Routes</span>
-                    <h3>Hostel & Academic Loops</h3>
-                    <p>Continuous circulation routes designed to minimize student wait times between hostel blocks and morning lectures.</p>
-                    <button type="button" class="btn secondary small-button" style="margin-top: auto;" onclick="switchDriverTab('Home')">View Active Requests →</button>
-                </div>
-
-                <div class="feature-glass-card">
-                    <div class="feature-card-icon">🌙</div>
-                    <span class="card-badge">Special Duty</span>
-                    <h3>Night Owl Escort</h3>
-                    <p>Direct door-to-door transit for late study groups, library departures, and lab researchers.</p>
-                    <button type="button" class="btn secondary small-button" style="margin-top: auto;" onclick="switchDriverTab('Home')">Go Online →</button>
-                </div>
-
-                <div class="feature-glass-card">
-                    <div class="feature-card-icon">💼</div>
-                    <span class="card-badge">Rewards</span>
-                    <h3>Driver Incentives</h3>
-                    <p>High rating bonuses, fuel allowances, and recognition for top-rated safe campus drivers each semester.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ==============================================
-             4. CONTACT TAB PANE (DISPATCH DESK)
-             ============================================== -->
-        <div id="driver-tab-contact" class="driver-tab-pane">
+        <div id="driver-tab-support" class="driver-tab-pane">
             <div class="page-section-header" style="margin-top: 10px;">
                 <span class="section-tag">Transport Dispatch</span>
                 <h2>Driver Support Desk</h2>
@@ -260,8 +522,8 @@
                     <div class="contact-info-card">
                         <div class="contact-icon-box">🚨</div>
                         <div class="contact-info-text">
-                            <h4>Security & Emergency Radio</h4>
-                            <p>Emergency assistance: <a href="tel:+914040404040">+91 40-WOXSEN-RIDE</a> (Ext. <strong>4040</strong>).</p>
+                            <h4>Security &amp; Emergency Radio</h4>
+                            <p>Emergency assistance: <a href="tel:+914040404040">+91 40-4040-4040</a> (Ext. <strong>4040</strong>).</p>
                         </div>
                     </div>
 
@@ -350,6 +612,14 @@
                 setTimeout(() => {
                     window.dispatchEvent(new Event('resize'));
                 }, 150);
+            } else if (tabId === 'Profile') {
+                if (typeof window.loadDriverProfile === 'function') {
+                    window.loadDriverProfile();
+                }
+            } else if (tabId === 'Rides') {
+                if (typeof window.loadDriverHistory === 'function') {
+                    window.loadDriverHistory();
+                }
             }
         }
 
